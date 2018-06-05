@@ -1,3 +1,8 @@
+# Folders
+Debug
+Release
+.vs
+
 # Prerequisites
 *.d
 
