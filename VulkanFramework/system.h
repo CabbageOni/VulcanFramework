@@ -2,6 +2,8 @@
 
 #include <Windows.h>
 
+#include "assert.h"
+
 extern class WinAPI
 {
 private:
@@ -27,6 +29,7 @@ public:
   friend HWND InitializeWindow(WNDCLASS& wndClass, const HINSTANCE& hInst);
   friend int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int);
   friend void Update();
+  friend Assert;
 } winAPI;
 
 extern class Engine

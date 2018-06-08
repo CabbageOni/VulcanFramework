@@ -115,13 +115,37 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="assert.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="time.cpp" />
+    <ClCompile Include="myvulkan.cpp" />
     <ClCompile Include="windows.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="assert.h" />
+    <ClInclude Include="resources\vulkan\vk_icd.h" />
+    <ClInclude Include="resources\vulkan\vk_layer.h" />
+    <ClInclude Include="resources\vulkan\vk_platform.h" />
+    <ClInclude Include="resources\vulkan\vk_sdk_platform.h" />
+    <ClInclude Include="resources\vulkan\vulkan.h" />
+    <ClInclude Include="resources\vulkan\vulkan.hpp" />
+    <ClInclude Include="resources\vulkan\vulkan_android.h" />
+    <ClInclude Include="resources\vulkan\vulkan_core.h" />
+    <ClInclude Include="resources\vulkan\vulkan_ios.h" />
+    <ClInclude Include="resources\vulkan\vulkan_macos.h" />
+    <ClInclude Include="resources\vulkan\vulkan_mir.h" />
+    <ClInclude Include="resources\vulkan\vulkan_vi.h" />
+    <ClInclude Include="resources\vulkan\vulkan_wayland.h" />
+    <ClInclude Include="resources\vulkan\vulkan_win32.h" />
+    <ClInclude Include="resources\vulkan\vulkan_xcb.h" />
+    <ClInclude Include="resources\vulkan\vulkan_xlib.h" />
+    <ClInclude Include="resources\vulkan\vulkan_xlib_xrandr.h" />
     <ClInclude Include="system.h" />
     <ClInclude Include="time.h" />
+    <ClInclude Include="myvulkan.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vulkanFunctions.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

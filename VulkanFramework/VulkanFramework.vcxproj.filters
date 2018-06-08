@@ -18,6 +18,15 @@
     <Filter Include="소스 파일\Time">
       <UniqueIdentifier>{a2d903cc-3a6b-4504-9a61-420934067833}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Vulkan">
+      <UniqueIdentifier>{3d79d8b3-b817-4bad-86dc-8831f7de0a03}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\Vulkan">
+      <UniqueIdentifier>{fc2eab2f-a12e-49ba-a05b-b020ff072cb1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Assert">
+      <UniqueIdentifier>{0d5f01f1-ddf5-434f-97e4-9875d4a5811b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="windows.cpp">
@@ -29,6 +38,12 @@
     <ClCompile Include="time.cpp">
       <Filter>소스 파일\Time</Filter>
     </ClCompile>
+    <ClCompile Include="myvulkan.cpp">
+      <Filter>소스 파일\Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="assert.cpp">
+      <Filter>소스 파일\Assert</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="system.h">
@@ -37,5 +52,67 @@
     <ClInclude Include="time.h">
       <Filter>소스 파일\Time</Filter>
     </ClInclude>
+    <ClInclude Include="resources\vulkan\vk_icd.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vk_layer.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vk_platform.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vk_sdk_platform.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan.hpp">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_android.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_core.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_ios.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_macos.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_mir.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_vi.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_wayland.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_win32.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_xcb.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_xlib.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\vulkan\vulkan_xlib_xrandr.h">
+      <Filter>리소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="myvulkan.h">
+      <Filter>소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="assert.h">
+      <Filter>소스 파일\Assert</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vulkanFunctions.inl">
+      <Filter>소스 파일\Vulkan</Filter>
+    </None>
   </ItemGroup>
 </Project>

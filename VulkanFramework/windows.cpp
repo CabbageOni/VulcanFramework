@@ -9,11 +9,14 @@
 
 #include "system.h"
 #include "time.h"
+#include "myvulkan.h"
 
 //todo:
 // Initialize ~ Terminate
 // Input
 // Vulkan lib
+
+//tutorial site: https://software.intel.com/en-us/articles/api-without-secrets-introduction-to-vulkan-preface
 
 void UpdateClientRect(const HWND& hwnd)
 {
@@ -92,7 +95,7 @@ bool Initialize()
 #endif
 
   //console.Initialize();
-  //if (!graphics.Initialize()) return false;
+  if (!vulkan.Initialize()) return false;
   //models.Initialize();
 
   return true;
