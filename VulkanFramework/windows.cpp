@@ -14,9 +14,6 @@
 //todo:
 // Initialize ~ Terminate
 // Input
-// Vulkan lib
-
-//tutorial site: https://software.intel.com/en-us/articles/api-without-secrets-introduction-to-vulkan-preface
 
 void UpdateClientRect(const HWND& hwnd)
 {
@@ -127,7 +124,7 @@ void End()
 
 void Terminate()
 {
-  //graphics.Terminate();
+  vulkan.Terminate();
   //models.Terminate();
 }
 
