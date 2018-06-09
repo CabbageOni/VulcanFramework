@@ -37,8 +37,8 @@ LOAD_INSTANCE_LEVEL(vkEnumerateDeviceExtensionProperties)
 LOAD_INSTANCE_LEVEL(vkCreateWin32SurfaceKHR)
 //LOAD_INSTANCE_LEVEL(vkDestroySurfaceKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceSupportKHR)
-//LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
-//LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceFormatsKHR)
+LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceFormatsKHR)
 //LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfacePresentModesKHR)
 #endif
 
@@ -53,6 +53,7 @@ LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceSupportKHR)
 LOAD_DEVICE_LEVEL(vkGetDeviceQueue)
 LOAD_DEVICE_LEVEL(vkDestroyDevice)
 LOAD_DEVICE_LEVEL(vkDeviceWaitIdle)
+LOAD_DEVICE_LEVEL(vkCreateSemaphore)
 
 #ifdef USE_SWAPCHAIN_EXTENSIONS
 //LOAD_DEVICE_LEVEL(vkCreateSwapchainKHR)

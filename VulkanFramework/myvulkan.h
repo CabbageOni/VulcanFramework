@@ -21,6 +21,8 @@ private:
   uint32_t m_present_queue_family_index;
   VkQueue m_graphics_queue;
   VkQueue m_present_queue;
+  VkSemaphore m_image_available_semaphore;
+  VkSemaphore m_rendering_finished_semaphore;
 
   bool LoadVulkanLibrary();
   bool LoadExportedEntryPoints();
@@ -37,6 +39,8 @@ private:
 
   //extensions required
   bool CreatePresentationSurface();
+  bool CreateSemaphores();
+  bool CreateSwapChain();
 
   bool Initialize();
   void Update();
@@ -52,8 +56,8 @@ private:
   #undef LOAD_GLOBAL_LEVEL
   #undef LOAD_INSTANCE_LEVEL
   #undef LOAD_DEVICE_LEVEL
-public:
 
+public:
   friend bool Initialize();
   friend void Update();
   friend void Terminate();

@@ -356,6 +356,48 @@ bool Vulkan::CreatePresentationSurface()
   return false;
 }
 
+bool Vulkan::CreateSemaphores()
+{
+  VkSemaphoreCreateInfo semaphore_create_info = { //peek VkSemaphoreCreateInfo for details
+    VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    nullptr, 0 };
+
+  if ((vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_image_available_semaphore) != VK_SUCCESS) ||
+    (vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_rendering_finished_semaphore) != VK_SUCCESS))
+  {
+    assert("Could not create semaphores!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  return true;
+}
+
+bool Vulkan::CreateSwapChain()
+{
+  VkSurfaceCapabilitiesKHR surface_capabilities;
+  if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physical_device, m_presentation_surface, &surface_capabilities) != VK_SUCCESS)
+  {
+    assert("Could not check presentation surface capabilities!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  uint32_t formats_count;
+  if ((vkGetPhysicalDeviceSurfaceFormatsKHR(m_physical_device, m_presentation_surface, &formats_count, nullptr) != VK_SUCCESS) || (formats_count == 0))
+  {
+    assert("Error occurred during presentation surface formats enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  std::vector<VkSurfaceFormatKHR> surface_formats(formats_count);
+  if (vkGetPhysicalDeviceSurfaceFormatsKHR(m_physical_device, m_presentation_surface, &formats_count, surface_formats.data()) != VK_SUCCESS)
+  {
+    assert("Error occurred during presentation surface formats enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  return true;
+}
+
 bool Vulkan::Initialize()
 {
 #define CHECK(x) if (!x()) return false;
@@ -369,6 +411,7 @@ bool Vulkan::Initialize()
   CHECK(CreateDevice)
   CHECK(LoadDeviceLevelEntryPoints)
   CHECK(GetDeviceQueue)
+  CHECK(CreateSemaphores)
 
 #undef Run
 
