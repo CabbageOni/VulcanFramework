@@ -5,6 +5,7 @@
 
 #include "myvulkan.h"
 #include "assert.h"
+#include "system.h"
 
 //current tutorial: https://software.intel.com/en-us/articles/api-without-secrets-introduction-to-vulkan-part-2
 
@@ -12,9 +13,9 @@ Vulkan vulkan;
 
 bool Vulkan::LoadVulkanLibrary()
 {
-  m_vulkanLibrary = LoadLibrary("vulkan-1.dll"); //this framework only works in Win32
+  m_vulkan_library = LoadLibrary("vulkan-1.dll"); //this framework only works in Win32
 
-  if (m_vulkanLibrary == nullptr)
+  if (m_vulkan_library == nullptr)
   {
     assert("Could not load Vulkan library!", "Vulkan", Assert::Error);
     return false;
@@ -25,7 +26,7 @@ bool Vulkan::LoadVulkanLibrary()
 bool Vulkan::LoadExportedEntryPoints()
 {
 #define LOAD_EXPORTED( func )                                                     \
-    if( !(func = (PFN_##func)GetProcAddress( m_vulkanLibrary, #func )) ) {        \
+    if( !(func = (PFN_##func)GetProcAddress( m_vulkan_library, #func )) ) {       \
       assert("Could not load exported function: "#func, "Vulkan", Assert::Error); \
       return false;                                                               \
     }
@@ -95,7 +96,7 @@ bool Vulkan::CreateInstance()
     &application_info,                       
     0, nullptr,
     static_cast<uint32_t>(extensions.size()), //enabledExtensionCount
-    &extensions[0] //enabledExtensionNames
+    (extensions.empty() ? nullptr : &extensions[0]) //enabledExtensionNames
   };
 
   if (vkCreateInstance(&instance_create_info, nullptr, &m_instance) != VK_SUCCESS)
@@ -146,71 +147,117 @@ bool Vulkan::CreateDevice()
     return false;
   }
 
-  VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;
-  uint32_t selected_queue_family_index = UINT32_MAX;
+  uint32_t selected_graphics_queue_family_index = UINT32_MAX;
+  uint32_t selected_present_queue_family_index = UINT32_MAX;
+
   for (uint32_t i = 0; i < num_devices; ++i)
-    if (CheckPhysicalDeviceProperties(physical_devices[i], selected_queue_family_index))
+    if (CheckPhysicalDeviceProperties(physical_devices[i], selected_graphics_queue_family_index, selected_present_queue_family_index))
     {
-      selected_physical_device = physical_devices[i];
+      m_physical_device = physical_devices[i];
       break;
     }
 
-  if (selected_physical_device == VK_NULL_HANDLE)
+  if (m_physical_device == VK_NULL_HANDLE)
   {
     assert("Could not select physical device based on the chosen properties!", "Vulkan", Assert::Error);
     return false;
   }
 
+  std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   std::vector<float> queue_priorities = { 1.0f }; //higher float = given more time to compute, but not always garunteed
                                                   //also only per device, independent from other devices
-
-  VkDeviceQueueCreateInfo queue_create_info = { //peek VkDeviceQueueCreateInfo for more details
+  
+  queue_create_infos.push_back( { //peek VkDeviceQueueCreateInfo for more details
     VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,    
     nullptr, 0,                                             
-    selected_queue_family_index,                   
+    selected_graphics_queue_family_index,
     static_cast<uint32_t>(queue_priorities.size()),
     queue_priorities.data()                        
+  });
+  
+  //if graphics and present uses different queue family
+  if (selected_graphics_queue_family_index != selected_present_queue_family_index)
+  {
+    queue_create_infos.push_back({ //peek VkDeviceQueueCreateInfo for more details
+      VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+      nullptr, 0,
+      selected_present_queue_family_index,
+      static_cast<uint32_t>(queue_priorities.size()),
+      queue_priorities.data()
+    });
+  }
+
+  std::vector<const char*> extensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
   };
 
   VkDeviceCreateInfo device_create_info = { //peek VkDeviceCreateInfo for more details
     VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
     nullptr, 0,                                   
-    1, //num of queue families                                 
-    &queue_create_info,           
-    0, nullptr, 0, nullptr,
+    static_cast<uint32_t>(queue_create_infos.size()), //num of queue families                                 
+    queue_create_infos.data(),
+    0, nullptr,
+    static_cast<uint32_t>(extensions.size()),
+    extensions.data(),
     nullptr // pointer to device features                              
   };
-
-  if (vkCreateDevice(selected_physical_device, &device_create_info, nullptr, &m_device) != VK_SUCCESS)
+  
+  if (vkCreateDevice(m_physical_device, &device_create_info, nullptr, &m_device) != VK_SUCCESS)
   {
     assert("Could not create Vulkan device!", "Vulkan", Assert::Error);
     return false;
   }
-
-  m_queue_family_index = selected_queue_family_index;
+  
+  m_graphics_queue_family_index = selected_graphics_queue_family_index;
+  m_present_queue_family_index = selected_present_queue_family_index;
   return true;
 }
 
-bool Vulkan::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device, uint32_t& queue_family_index)
+bool Vulkan::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
+                                          uint32_t& selected_graphics_queue_family_index,
+                                          uint32_t &selected_present_queue_family_index)
 {
   VkPhysicalDeviceProperties device_properties;
-  //VkPhysicalDeviceFeatures device_features;
+  VkPhysicalDeviceFeatures   device_features;
 
   vkGetPhysicalDeviceProperties(physical_device, &device_properties);
-  //vkGetPhysicalDeviceFeatures(physical_device, &device_features);
+  vkGetPhysicalDeviceFeatures(physical_device, &device_features);
 
-  uint32_t major_version = VK_VERSION_MAJOR(device_properties.apiVersion);
-  uint32_t minor_version = VK_VERSION_MINOR(device_properties.apiVersion);
-  uint32_t patch_version = VK_VERSION_PATCH(device_properties.apiVersion);
-
-  //checking minimum required parameters
-  if ((major_version < 1) && (device_properties.limits.maxImageDimension2D < 4096))
+  uint32_t extensions_count = 0;
+  if ((vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extensions_count, nullptr) != VK_SUCCESS) || (extensions_count == 0))
   {
-    OutputDebugString(("Physical device "+ std::string(device_properties.deviceName) + " doesn't support required parameters!\n").c_str());
+    OutputDebugString(("Error occurred during physical device \"" + std::string(device_properties.deviceName) + "\" extensions enumeration!\n").c_str());
     return false;
   }
 
-  //checking queue family for device
+  std::vector<VkExtensionProperties> available_extensions(extensions_count);
+  if (vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extensions_count, available_extensions.data()) != VK_SUCCESS)
+  {
+    OutputDebugString(("Error occurred during physical device \"" + std::string(device_properties.deviceName) + "\" extensions enumeration!\n").c_str());
+    return false;
+  }
+
+  std::vector<const char*> device_extensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+  };
+
+  for (size_t i = 0; i < device_extensions.size(); ++i)
+    if (!CheckExtensionAvailability(device_extensions[i], available_extensions))
+    {
+      OutputDebugString(("Physical device \"" + std::string(device_properties.deviceName) + "\" doesn't support extension named\"" + std::string(device_extensions[i]) + "\"!").c_str());
+      return false;
+    }
+
+  uint32_t major_version = VK_VERSION_MAJOR(device_properties.apiVersion);
+  //  uint32_t minor_version = VK_VERSION_MINOR(device_properties.apiVersion);
+  //  uint32_t patch_version = VK_VERSION_PATCH(device_properties.apiVersion);
+  
+  if ((major_version < 1) || (device_properties.limits.maxImageDimension2D < 4096))
+  {
+    OutputDebugString(("Physical device \"" + std::string(device_properties.deviceName) + "\" doesn't support required parameters!").c_str());
+    return false;
+  }
+
   uint32_t queue_families_count = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_families_count, nullptr);
   if (queue_families_count == 0)
@@ -218,21 +265,59 @@ bool Vulkan::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device, uin
     OutputDebugString(("Physical device " + std::string(device_properties.deviceName) + " doesn't have any queue families!\n").c_str());
     return false;
   }
-
-  //load queue family properties
-  std::vector<VkQueueFamilyProperties> queue_family_properties(queue_families_count);
+  
+  std::vector<VkQueueFamilyProperties>  queue_family_properties(queue_families_count);
+  std::vector<VkBool32> queue_present_support(queue_families_count);
+  
   vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_families_count, queue_family_properties.data());
+
+  uint32_t graphics_queue_family_index = UINT32_MAX;
+  uint32_t present_queue_family_index = UINT32_MAX;
+  
   for (uint32_t i = 0; i < queue_families_count; ++i)
+  {
+    vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, m_presentation_surface, &queue_present_support[i]);
+
     if ((queue_family_properties[i].queueCount > 0) && (queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT))
     {
-      OutputDebugString(("Selected device : " + std::string(device_properties.deviceName) + "\n").c_str());
-      queue_family_index = i;
-      return true;
+      // Select first queue that supports graphics
+      if (graphics_queue_family_index == UINT32_MAX)
+      {
+        graphics_queue_family_index = i;
+      }
+  
+      // If there is queue that supports both graphics and present - prefer it
+      if (queue_present_support[i])
+      {
+        selected_graphics_queue_family_index = i;
+        selected_present_queue_family_index = i;
+        OutputDebugString(("Selected device: " + std::string(device_properties.deviceName) + "\n").c_str());
+        return true;
+      }
     }
+  }
 
-  OutputDebugString(("Could not find queue family with required properties on physical device"
-    + std::string(device_properties.deviceName) + "!\n").c_str());
-  return false;
+  // We don't have queue that supports both graphics and present so we have to use separate queues
+  for (uint32_t i = 0; i < queue_families_count; ++i)
+  {
+    if (queue_present_support[i])
+    {
+      present_queue_family_index = i;
+      break;
+    }
+  }
+
+  // If this device doesn't support queues with graphics and present capabilities don't use it
+  if ((graphics_queue_family_index == UINT32_MAX) || (present_queue_family_index == UINT32_MAX))
+  {
+    OutputDebugString(("Could not find queue family with required properties on physical device \"" + std::string(device_properties.deviceName) + "\"!\n").c_str());
+    return false;
+  }
+
+  selected_graphics_queue_family_index = graphics_queue_family_index;
+  selected_present_queue_family_index = present_queue_family_index;
+  OutputDebugString(("Selected device: " + std::string(device_properties.deviceName) + "\n").c_str());
+  return true;
 }
 
 bool Vulkan::LoadDeviceLevelEntryPoints()
@@ -250,8 +335,25 @@ bool Vulkan::LoadDeviceLevelEntryPoints()
 
 bool Vulkan::GetDeviceQueue()
 {
-  vkGetDeviceQueue(m_device, m_queue_family_index, 0 /*queue_index*/, &m_queue); //need to call this per loading queue!
+  vkGetDeviceQueue(m_device, m_graphics_queue_family_index, 0 /*queue_index*/, &m_graphics_queue); //need to call this per loading queue!
+  vkGetDeviceQueue(m_device, m_present_queue_family_index, 0, &m_present_queue);
   return true;
+}
+
+bool Vulkan::CreatePresentationSurface()
+{
+  VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
+    VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+    nullptr, 0,
+     winAPI.InstanceHandle(), // HINSTANCE hinstance
+     winAPI.WindowHandle() // HWND hwnd
+  };
+
+  if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
+    return true;
+
+  assert("Could not create presentation surface!", "Vulkan", Assert::Error);
+  return false;
 }
 
 bool Vulkan::Initialize()
@@ -263,6 +365,7 @@ bool Vulkan::Initialize()
   CHECK(LoadGlobalLevelEntryPoints)
   CHECK(CreateInstance)
   CHECK(LoadInstanceLevelEntryPoints)
+  CHECK(CreatePresentationSurface)
   CHECK(CreateDevice)
   CHECK(LoadDeviceLevelEntryPoints)
   CHECK(GetDeviceQueue)
@@ -290,6 +393,6 @@ void Vulkan::Terminate()
   if (m_instance != VK_NULL_HANDLE)
     vkDestroyInstance(m_instance, nullptr);
 
-  if (m_vulkanLibrary) 
-    FreeLibrary(m_vulkanLibrary);
+  if (m_vulkan_library)
+    FreeLibrary(m_vulkan_library);
 }

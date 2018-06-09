@@ -8,6 +8,7 @@ extern class WinAPI
 {
 private:
   HWND m_window_handle;
+  HINSTANCE m_instance_handle;
   int m_initial_width = 1080;
   int m_initial_height = 720;
   int m_width = m_initial_width;
@@ -23,6 +24,7 @@ public:
   int Width() const { return m_width; }
   int Height() const { return m_height; }
   const HWND& WindowHandle() const { return m_window_handle; }
+  const HINSTANCE& InstanceHandle() const { return m_instance_handle; }
 
   friend void UpdateClientRect(const HWND& hwnd);
   friend LRESULT CALLBACK MainWindowCallback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

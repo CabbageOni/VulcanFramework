@@ -34,9 +34,9 @@ void UpdateClientRect(const HWND& hwnd)
   winAPI.m_height = winAPI.screen_client.bottom - winAPI.screen_client.top;
 }
 
-LRESULT CALLBACK MainWindowCallback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
+LRESULT CALLBACK MainWindowCallback(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
 {
-  switch (uMsg)
+  switch (u_msg)
   {
   case WM_SETCURSOR:
     static HCURSOR normal_cursor = LoadCursor(nullptr, IDC_ARROW);
@@ -65,28 +65,28 @@ LRESULT CALLBACK MainWindowCallback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM 
     break;
 
   default:
-    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+    return DefWindowProc(hwnd, u_msg, w_param, l_param);
   }
 
   return 0;
 }
 
-HWND InitializeWindow(WNDCLASS& wndClass, const HINSTANCE& hInst)
+HWND InitializeWindow(WNDCLASS& wnd_class, const HINSTANCE& h_inst)
 {
-  wndClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //window class style
-  wndClass.lpfnWndProc = MainWindowCallback;
-  wndClass.hInstance = hInst;
-  wndClass.lpszClassName = "Framework ran with Vulkan Library";
+  wnd_class.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //window class style
+  wnd_class.lpfnWndProc = MainWindowCallback;
+  wnd_class.hInstance = h_inst;
+  wnd_class.lpszClassName = "Framework ran with Vulkan Library";
 
-  if (RegisterClass(&wndClass))
+  if (RegisterClass(&wnd_class))
     return CreateWindowEx(0,
-      wndClass.lpszClassName,
+      wnd_class.lpszClassName,
       "Vulkan Framework", //title
       WS_OVERLAPPEDWINDOW | WS_VISIBLE,
       CW_USEDEFAULT, CW_USEDEFAULT,
       winAPI.m_initial_width,
       winAPI.m_initial_height,
-      0, 0, wndClass.hInstance, 0);
+      0, 0, wnd_class.hInstance, 0);
 
   return nullptr;
 }
@@ -135,10 +135,11 @@ void Terminate()
   //models.Terminate();
 }
 
-int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int)
+int CALLBACK WinMain(HINSTANCE h_instance, HINSTANCE, LPSTR, int)
 {
-  WNDCLASS windowClass = {};
-  winAPI.m_window_handle = InitializeWindow(windowClass, hInstance);
+  WNDCLASS window_class = {};
+  winAPI.m_window_handle = InitializeWindow(window_class, h_instance);
+  winAPI.m_instance_handle = h_instance;
   if (!winAPI.m_window_handle) return 0;
 
   if (!Initialize()) return 0;

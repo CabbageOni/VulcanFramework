@@ -3,18 +3,24 @@
 #include <Windows.h>
 #include <vector>
 
+//defines
 #define VK_USE_PLATFORM_WIN32_KHR
+#define USE_SWAPCHAIN_EXTENSIONS
 #include "resources\vulkan\vulkan.h"
 
 extern class Vulkan
 {
 private:
-  HMODULE m_vulkanLibrary;
+  HMODULE m_vulkan_library;
   VkInstance m_instance;
-  //belows should be one per devices, but now all in here since I'm using only one device and queue
+  //belows should be one per device, but for now they are here since I'm using only one device
   VkDevice m_device;
-  uint32_t m_queue_family_index;
-  VkQueue m_queue;
+  VkPhysicalDevice m_physical_device;
+  VkSurfaceKHR  m_presentation_surface;
+  uint32_t m_graphics_queue_family_index;
+  uint32_t m_present_queue_family_index;
+  VkQueue m_graphics_queue;
+  VkQueue m_present_queue;
 
   bool LoadVulkanLibrary();
   bool LoadExportedEntryPoints();
@@ -23,9 +29,14 @@ private:
   bool CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions);
   bool LoadInstanceLevelEntryPoints();
   bool CreateDevice();
-  bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device, uint32_t& queue_family_index);
+  bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
+                                    uint32_t& selected_graphics_queue_family_index,
+                                    uint32_t &selected_present_queue_family_index);
   bool LoadDeviceLevelEntryPoints();
   bool GetDeviceQueue();
+
+  //extensions required
+  bool CreatePresentationSurface();
 
   bool Initialize();
   void Update();
