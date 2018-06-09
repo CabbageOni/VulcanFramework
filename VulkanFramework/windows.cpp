@@ -13,6 +13,7 @@
 
 //todo:
 // Initialize ~ Terminate
+// Link winAPI to Vulkan
 // Input
 
 void UpdateClientRect(const HWND& hwnd)
@@ -75,10 +76,17 @@ HWND InitializeWindow(WNDCLASS& wndClass, const HINSTANCE& hInst)
   wndClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW; //window class style
   wndClass.lpfnWndProc = MainWindowCallback;
   wndClass.hInstance = hInst;
-  wndClass.lpszClassName = "Cab Framework";
+  wndClass.lpszClassName = "Framework ran with Vulkan Library";
 
   if (RegisterClass(&wndClass))
-    return CreateWindowEx(0, wndClass.lpszClassName, "Vulkan Framework", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, winAPI.m_initial_width, winAPI.m_initial_height, 0, 0, wndClass.hInstance, 0);
+    return CreateWindowEx(0,
+      wndClass.lpszClassName,
+      "Vulkan Framework", //title
+      WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+      CW_USEDEFAULT, CW_USEDEFAULT,
+      winAPI.m_initial_width,
+      winAPI.m_initial_height,
+      0, 0, wndClass.hInstance, 0);
 
   return nullptr;
 }
@@ -109,9 +117,8 @@ void Begin()
 void Update()
 {
   //level->Update();
-  //graphics.Update();
+  vulkan.Update();
   //MyImGui::Implementation();
-  SwapBuffers(winAPI.m_hdc);
   //input.Update();
   timer.Update();
 }

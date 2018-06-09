@@ -50,6 +50,35 @@ bool Vulkan::LoadGlobalLevelEntryPoints()
 
 bool Vulkan::CreateInstance()
 {
+  uint32_t extensions_count = 0;
+  if ((vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, nullptr) != VK_SUCCESS) || (extensions_count == 0))
+  {
+    assert("Error occurred during instance extensions enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+  OutputDebugString(("number of extensions: " + std::to_string(extensions_count) + "\n").c_str());
+
+  std::vector<VkExtensionProperties> available_extensions(extensions_count);
+  if (vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, available_extensions.data()) != VK_SUCCESS)
+  {
+    assert("Error occurred during instance extensions enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  std::vector<const char*> extensions =
+  {
+    VK_KHR_SURFACE_EXTENSION_NAME, //displaying window extension
+    VK_KHR_WIN32_SURFACE_EXTENSION_NAME, //exclusive for Windows OS
+  };
+
+  //for each extensions search for specific extension
+  for (size_t i = 0; i < extensions.size(); ++i)
+    if (!CheckExtensionAvailability(extensions[i], available_extensions))
+    {
+      assert(("Could not find instance extension named \"" + std::string(extensions[i]) + "\"!").c_str(), "Vulkan", Assert::Error);
+      return false;
+    }
+
   VkApplicationInfo application_info = { //peek VkApplicationInfo for more details
     VK_STRUCTURE_TYPE_APPLICATION_INFO,             
     nullptr,                                        
@@ -64,13 +93,26 @@ bool Vulkan::CreateInstance()
     VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
     nullptr, 0,                                       
     &application_info,                       
-    0, nullptr, 0, nullptr                                  
+    0, nullptr,
+    static_cast<uint32_t>(extensions.size()), //enabledExtensionCount
+    &extensions[0] //enabledExtensionNames
   };
 
   if (vkCreateInstance(&instance_create_info, nullptr, &m_instance) != VK_SUCCESS)
+  {
     assert("Could not create Vulkan instance!", "Vulkan", Assert::Error);
+    return false;
+  }
 
   return true;
+}
+
+bool Vulkan::CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions)
+{
+  for (size_t i = 0; i < available_extensions.size(); ++i)
+    if (strcmp(available_extensions[i].extensionName, extension_name) == 0)
+      return true;
+  return false;
 }
 
 bool Vulkan::LoadInstanceLevelEntryPoints()
@@ -95,14 +137,14 @@ bool Vulkan::CreateDevice()
     return false;
   }
 
+  OutputDebugString(("number of physical devices: " + std::to_string(num_devices) + "\n").c_str());
+
   std::vector<VkPhysicalDevice> physical_devices(num_devices);
   if (vkEnumeratePhysicalDevices(m_instance, &num_devices, &physical_devices[0]) != VK_SUCCESS)
   {
     assert("Error occurred during physical devices enumeration!", "Vulkan", Assert::Error);
     return false;
   }
-
-  OutputDebugString(("number of physical devices: " + std::to_string(num_devices) + "\n").c_str());
 
   VkPhysicalDevice selected_physical_device = VK_NULL_HANDLE;
   uint32_t selected_queue_family_index = UINT32_MAX;
@@ -228,6 +270,11 @@ bool Vulkan::Initialize()
 #undef Run
 
   return true;
+}
+
+void Vulkan::Update()
+{
+  //currently doing nothing here
 }
 
 void Vulkan::Terminate()

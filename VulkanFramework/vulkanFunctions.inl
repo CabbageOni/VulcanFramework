@@ -13,7 +13,7 @@ LOAD_EXPORTED(vkGetInstanceProcAddr)
 #endif
 
 LOAD_GLOBAL_LEVEL(vkCreateInstance)
-//LOAD_GLOBAL_LEVEL(vkEnumerateInstanceExtensionProperties)
+LOAD_GLOBAL_LEVEL(vkEnumerateInstanceExtensionProperties)
 //LOAD_GLOBAL_LEVEL(vkEnumerateInstanceLayerProperties)
 
 #undef LOAD_GLOBAL_LEVEL
@@ -32,6 +32,7 @@ LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceQueueFamilyProperties)
 LOAD_INSTANCE_LEVEL(vkCreateDevice)
 LOAD_INSTANCE_LEVEL(vkGetDeviceProcAddr)
 //LOAD_INSTANCE_LEVEL(vkEnumerateDeviceExtensionProperties)
+LOAD_INSTANCE_LEVEL(vkCreateWin32SurfaceKHR)
 
 #undef LOAD_INSTANCE_LEVEL
 
