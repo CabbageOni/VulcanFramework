@@ -27,6 +27,12 @@
     <Filter Include="소스 파일\Assert">
       <UniqueIdentifier>{0d5f01f1-ddf5-434f-97e4-9875d4a5811b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Vulkan\Base">
+      <UniqueIdentifier>{10011a03-d3e4-413c-8b36-83c80ae26696}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Vulkan\SwapChain">
+      <UniqueIdentifier>{17276bea-e848-4d53-b445-74757c81a1e0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="windows.cpp">
@@ -43,6 +49,12 @@
     </ClCompile>
     <ClCompile Include="assert.cpp">
       <Filter>소스 파일\Assert</Filter>
+    </ClCompile>
+    <ClCompile Include="vkswapchain.cpp">
+      <Filter>소스 파일\Vulkan\SwapChain</Filter>
+    </ClCompile>
+    <ClCompile Include="vkbase.cpp">
+      <Filter>소스 파일\Vulkan\Base</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -109,9 +121,21 @@
     <ClInclude Include="assert.h">
       <Filter>소스 파일\Assert</Filter>
     </ClInclude>
+    <ClInclude Include="vkbase.h">
+      <Filter>소스 파일\Vulkan\Base</Filter>
+    </ClInclude>
+    <ClInclude Include="vkmode.h">
+      <Filter>소스 파일\Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="vkswapchain.h">
+      <Filter>소스 파일\Vulkan\SwapChain</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vulkanFunctions.inl">
+      <Filter>소스 파일\Vulkan</Filter>
+    </None>
+    <None Include="using_vk_mode.setting">
       <Filter>소스 파일\Vulkan</Filter>
     </None>
   </ItemGroup>

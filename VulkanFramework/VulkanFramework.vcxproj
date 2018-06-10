@@ -119,10 +119,13 @@
     <ClCompile Include="system.cpp" />
     <ClCompile Include="time.cpp" />
     <ClCompile Include="myvulkan.cpp" />
+    <ClCompile Include="vkbase.cpp" />
+    <ClCompile Include="vkswapchain.cpp" />
     <ClCompile Include="windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="assert.h" />
+    <ClInclude Include="vkbase.h" />
     <ClInclude Include="resources\vulkan\vk_icd.h" />
     <ClInclude Include="resources\vulkan\vk_layer.h" />
     <ClInclude Include="resources\vulkan\vk_platform.h" />
@@ -143,8 +146,13 @@
     <ClInclude Include="system.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="myvulkan.h" />
+    <ClInclude Include="vkmode.h" />
+    <ClInclude Include="vkswapchain.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="using_vk_mode.setting">
+      <FileType>CppHeader</FileType>
+    </None>
     <None Include="vulkanFunctions.inl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

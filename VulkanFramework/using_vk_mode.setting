@@ -1,0 +1,12 @@
+//available modes
+#define VK_BASE 0
+#define VK_SWAPCHAIN 1
+
+//currently using mode
+#define VK_CURRENT_MODE VK_SWAPCHAIN
+
+#if VK_CURRENT_MODE == 0
+#define VK_CURRENT_MODE_CLASS_NAME VKBase
+#elif VK_CURRENT_MODE == VK_SWAPCHAIN
+#define VK_CURRENT_MODE_CLASS_NAME VKSwapChain
+#endif
