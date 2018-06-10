@@ -416,55 +416,53 @@ bool Vulkan::CreateSwapChain()
     return false;
   }
 
-  //uint32_t                      desired_number_of_images = GetSwapChainNumImages(surface_capabilities);
-  //VkSurfaceFormatKHR            desired_format = GetSwapChainFormat(surface_formats);
-  //VkExtent2D                    desired_extent = GetSwapChainExtent(surface_capabilities);
-  //VkImageUsageFlags             desired_usage = GetSwapChainUsageFlags(surface_capabilities);
-  //VkSurfaceTransformFlagBitsKHR desired_transform = GetSwapChainTransform(surface_capabilities);
-  //VkPresentModeKHR              desired_present_mode = GetSwapChainPresentMode(present_modes);
-  //VkSwapchainKHR                old_swap_chain = Vulkan.SwapChain;
-  //
-  //if (static_cast<int>(desired_usage) == -1) {
-  //  return false;
-  //}
-  //if (static_cast<int>(desired_present_mode) == -1) {
-  //  return false;
-  //}
-  //if ((desired_extent.width == 0) || (desired_extent.height == 0)) {
-  //  // Current surface size is (0, 0) so we can't create a swap chain and render anything (CanRender == false)
-  //  // But we don't wont to kill the application as this situation may occur i.e. when window gets minimized
+  VkImageUsageFlags             desired_usage = GetSwapChainUsageFlags(surface_capabilities);
+  VkPresentModeKHR              desired_present_mode = GetSwapChainPresentMode(present_modes);
+  VkExtent2D                    desired_extent = GetSwapChainExtent(surface_capabilities);
+  uint32_t                      desired_number_of_images = GetSwapChainNumImages(surface_capabilities);
+  VkSurfaceFormatKHR            desired_format = GetSwapChainFormat(surface_formats);
+  VkSurfaceTransformFlagBitsKHR desired_transform = GetSwapChainTransform(surface_capabilities);
+  VkSwapchainKHR                old_swap_chain = m_swap_chain;
+  
+  if (static_cast<int>(desired_usage) == -1)
+    return false;
+
+  if (static_cast<int>(desired_present_mode) == -1)
+    return false;
+  
+  // (0,0) window size can happen (like when minimized), just don't render
+  //if ((desired_extent.width == 0) || (desired_extent.height == 0))
   //  return true;
-  //}
-  //
-  //VkSwapchainCreateInfoKHR swap_chain_create_info = {
-  //  VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // VkStructureType                sType
-  //  nullptr,                                      // const void                    *pNext
-  //  0,                                            // VkSwapchainCreateFlagsKHR      flags
-  //  Vulkan.PresentationSurface,                   // VkSurfaceKHR                   surface
-  //  desired_number_of_images,                     // uint32_t                       minImageCount
-  //  desired_format.format,                        // VkFormat                       imageFormat
-  //  desired_format.colorSpace,                    // VkColorSpaceKHR                imageColorSpace
-  //  desired_extent,                               // VkExtent2D                     imageExtent
-  //  1,                                            // uint32_t                       imageArrayLayers
-  //  desired_usage,                                // VkImageUsageFlags              imageUsage
-  //  VK_SHARING_MODE_EXCLUSIVE,                    // VkSharingMode                  imageSharingMode
-  //  0,                                            // uint32_t                       queueFamilyIndexCount
-  //  nullptr,                                      // const uint32_t                *pQueueFamilyIndices
-  //  desired_transform,                            // VkSurfaceTransformFlagBitsKHR  preTransform
-  //  VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,            // VkCompositeAlphaFlagBitsKHR    compositeAlpha
-  //  desired_present_mode,                         // VkPresentModeKHR               presentMode
-  //  VK_TRUE,                                      // VkBool32                       clipped
-  //  old_swap_chain                                // VkSwapchainKHR                 oldSwapchain
-  //};
-  //
-  //if (vkCreateSwapchainKHR(Vulkan.Device, &swap_chain_create_info, nullptr, &Vulkan.SwapChain) != VK_SUCCESS) {
-  //  std::cout << "Could not create swap chain!" << std::endl;
-  //  return false;
-  //}
-  //if (old_swap_chain != VK_NULL_HANDLE) {
-  //  vkDestroySwapchainKHR(Vulkan.Device, old_swap_chain, nullptr);
-  //}
-  //
+
+  VkSwapchainCreateInfoKHR swap_chain_create_info = { //peek VkSwapchainCreateInfoKHR for detail
+    VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+    nullptr, 0,                                         
+    m_presentation_surface,                 
+    desired_number_of_images,                   
+    desired_format.format,                      
+    desired_format.colorSpace,                  
+    desired_extent,                             
+    1,                                          
+    desired_usage,                              
+    VK_SHARING_MODE_EXCLUSIVE, //exclusive: other queues can refer to images, but cannot do at once. (barrier feature in thread-like)
+    0, nullptr, //needed if Sharing mode is concurrent, need to sync many queues from different queue families to avoid thread-like problem
+    desired_transform,                          
+    VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,          
+    desired_present_mode,                       
+    VK_TRUE,                                    
+    old_swap_chain                              
+  };
+
+  if (vkCreateSwapchainKHR(m_device, &swap_chain_create_info, nullptr, &m_swap_chain) != VK_SUCCESS)
+  {
+    assert("Could not create swap chain!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  //release old swap chain
+  if (old_swap_chain != VK_NULL_HANDLE)
+    vkDestroySwapchainKHR(m_device, old_swap_chain, nullptr);
+
   //CanRender = true;
 
   return true;
@@ -477,6 +475,8 @@ uint32_t Vulkan::GetSwapChainNumImages(VkSurfaceCapabilitiesKHR& surface_capabil
   uint32_t image_count = surface_capabilities.minImageCount + 1; //asking for one more
   if ((surface_capabilities.maxImageCount > 0) && (image_count > surface_capabilities.maxImageCount))
     image_count = surface_capabilities.maxImageCount;
+
+  OutputDebugString(("Available Swap Chain Images: " + std::to_string(image_count) + "\n").c_str());
   return image_count;
 }
 
@@ -562,6 +562,26 @@ VkSurfaceTransformFlagBitsKHR Vulkan::GetSwapChainTransform(VkSurfaceCapabilitie
     return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
   else
     return surface_capabilities.currentTransform;
+}
+
+VkPresentModeKHR Vulkan::GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes)
+{
+  // available present modes: Immediate, FIFO(Relax), Mailbox
+  // FIFO is always available
+  // Mailbox is not, but more stable like triple-buffering (v-sync)
+
+  //if supports mailbox, use it
+  for (VkPresentModeKHR &present_mode : present_modes)
+    if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+      return present_mode;
+
+  //otherwise use fifo
+  for (VkPresentModeKHR &present_mode : present_modes)
+    if (present_mode == VK_PRESENT_MODE_FIFO_KHR)
+      return present_mode;
+
+  assert("FIFO present mode is not supported by the swap chain!", "Vulkan", Assert::Error);
+  return static_cast<VkPresentModeKHR>(-1);
 }
 
 bool Vulkan::Initialize()

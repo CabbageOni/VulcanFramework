@@ -23,6 +23,7 @@ private:
   VkQueue m_present_queue;
   VkSemaphore m_image_available_semaphore;
   VkSemaphore m_rendering_finished_semaphore;
+  VkSwapchainKHR m_swap_chain;
 
   bool LoadVulkanLibrary();
   bool LoadExportedEntryPoints();
@@ -45,7 +46,8 @@ private:
   VkSurfaceFormatKHR GetSwapChainFormat(std::vector<VkSurfaceFormatKHR> &surface_formats);
   VkExtent2D GetSwapChainExtent(VkSurfaceCapabilitiesKHR &surface_capabilities);
   VkImageUsageFlags GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& surface_capabilities);
-  VkSurfaceTransformFlagBitsKHR GetSwapChainTransform(VkSurfaceCapabilitiesKHR &surface_capabilities);
+  VkSurfaceTransformFlagBitsKHR GetSwapChainTransform(VkSurfaceCapabilitiesKHR& surface_capabilities);
+  VkPresentModeKHR GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes);
 
   bool Initialize();
   void Update();

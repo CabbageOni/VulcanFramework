@@ -56,8 +56,8 @@ LOAD_DEVICE_LEVEL(vkDeviceWaitIdle)
 LOAD_DEVICE_LEVEL(vkCreateSemaphore)
 
 #ifdef USE_SWAPCHAIN_EXTENSIONS
-//LOAD_DEVICE_LEVEL(vkCreateSwapchainKHR)
-//LOAD_DEVICE_LEVEL(vkDestroySwapchainKHR)
+LOAD_DEVICE_LEVEL(vkCreateSwapchainKHR)
+LOAD_DEVICE_LEVEL(vkDestroySwapchainKHR)
 //LOAD_DEVICE_LEVEL(vkGetSwapchainImagesKHR)
 //LOAD_DEVICE_LEVEL(vkAcquireNextImageKHR)
 //LOAD_DEVICE_LEVEL(vkQueuePresentKHR)
