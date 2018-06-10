@@ -39,7 +39,7 @@ LOAD_INSTANCE_LEVEL(vkCreateWin32SurfaceKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceSupportKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceFormatsKHR)
-//LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfacePresentModesKHR)
+LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfacePresentModesKHR)
 #endif
 
 #undef LOAD_INSTANCE_LEVEL

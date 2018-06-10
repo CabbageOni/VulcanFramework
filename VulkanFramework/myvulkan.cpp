@@ -374,6 +374,12 @@ bool Vulkan::CreateSemaphores()
 
 bool Vulkan::CreateSwapChain()
 {
+  //CanRender = false;
+  //
+  //if (Vulkan.Device != VK_NULL_HANDLE) {
+  //  vkDeviceWaitIdle(Vulkan.Device);
+  //}
+
   VkSurfaceCapabilitiesKHR surface_capabilities;
   if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physical_device, m_presentation_surface, &surface_capabilities) != VK_SUCCESS)
   {
@@ -395,7 +401,167 @@ bool Vulkan::CreateSwapChain()
     return false;
   }
 
+  uint32_t present_modes_count;
+  if ((vkGetPhysicalDeviceSurfacePresentModesKHR(m_physical_device,m_presentation_surface, &present_modes_count, nullptr) != VK_SUCCESS) ||
+    (present_modes_count == 0))
+  {
+    assert("Error occurred during presentation surface present modes enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  std::vector<VkPresentModeKHR> present_modes(present_modes_count);
+  if (vkGetPhysicalDeviceSurfacePresentModesKHR(m_physical_device, m_presentation_surface, &present_modes_count, present_modes.data()) != VK_SUCCESS)
+  {
+    assert("Error occurred during presentation surface present modes enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  //uint32_t                      desired_number_of_images = GetSwapChainNumImages(surface_capabilities);
+  //VkSurfaceFormatKHR            desired_format = GetSwapChainFormat(surface_formats);
+  //VkExtent2D                    desired_extent = GetSwapChainExtent(surface_capabilities);
+  //VkImageUsageFlags             desired_usage = GetSwapChainUsageFlags(surface_capabilities);
+  //VkSurfaceTransformFlagBitsKHR desired_transform = GetSwapChainTransform(surface_capabilities);
+  //VkPresentModeKHR              desired_present_mode = GetSwapChainPresentMode(present_modes);
+  //VkSwapchainKHR                old_swap_chain = Vulkan.SwapChain;
+  //
+  //if (static_cast<int>(desired_usage) == -1) {
+  //  return false;
+  //}
+  //if (static_cast<int>(desired_present_mode) == -1) {
+  //  return false;
+  //}
+  //if ((desired_extent.width == 0) || (desired_extent.height == 0)) {
+  //  // Current surface size is (0, 0) so we can't create a swap chain and render anything (CanRender == false)
+  //  // But we don't wont to kill the application as this situation may occur i.e. when window gets minimized
+  //  return true;
+  //}
+  //
+  //VkSwapchainCreateInfoKHR swap_chain_create_info = {
+  //  VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,  // VkStructureType                sType
+  //  nullptr,                                      // const void                    *pNext
+  //  0,                                            // VkSwapchainCreateFlagsKHR      flags
+  //  Vulkan.PresentationSurface,                   // VkSurfaceKHR                   surface
+  //  desired_number_of_images,                     // uint32_t                       minImageCount
+  //  desired_format.format,                        // VkFormat                       imageFormat
+  //  desired_format.colorSpace,                    // VkColorSpaceKHR                imageColorSpace
+  //  desired_extent,                               // VkExtent2D                     imageExtent
+  //  1,                                            // uint32_t                       imageArrayLayers
+  //  desired_usage,                                // VkImageUsageFlags              imageUsage
+  //  VK_SHARING_MODE_EXCLUSIVE,                    // VkSharingMode                  imageSharingMode
+  //  0,                                            // uint32_t                       queueFamilyIndexCount
+  //  nullptr,                                      // const uint32_t                *pQueueFamilyIndices
+  //  desired_transform,                            // VkSurfaceTransformFlagBitsKHR  preTransform
+  //  VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,            // VkCompositeAlphaFlagBitsKHR    compositeAlpha
+  //  desired_present_mode,                         // VkPresentModeKHR               presentMode
+  //  VK_TRUE,                                      // VkBool32                       clipped
+  //  old_swap_chain                                // VkSwapchainKHR                 oldSwapchain
+  //};
+  //
+  //if (vkCreateSwapchainKHR(Vulkan.Device, &swap_chain_create_info, nullptr, &Vulkan.SwapChain) != VK_SUCCESS) {
+  //  std::cout << "Could not create swap chain!" << std::endl;
+  //  return false;
+  //}
+  //if (old_swap_chain != VK_NULL_HANDLE) {
+  //  vkDestroySwapchainKHR(Vulkan.Device, old_swap_chain, nullptr);
+  //}
+  //
+  //CanRender = true;
+
   return true;
+}
+
+uint32_t Vulkan::GetSwapChainNumImages(VkSurfaceCapabilitiesKHR& surface_capabilities)
+{
+  //Image ~= FrameBuffer
+  //(ex) needs at least 2 for double buffer
+  uint32_t image_count = surface_capabilities.minImageCount + 1; //asking for one more
+  if ((surface_capabilities.maxImageCount > 0) && (image_count > surface_capabilities.maxImageCount))
+    image_count = surface_capabilities.maxImageCount;
+  return image_count;
+}
+
+VkSurfaceFormatKHR Vulkan::GetSwapChainFormat(std::vector<VkSurfaceFormatKHR>& surface_formats)
+{
+  // If the list contains only one entry with undefined format
+  // it means that there are no preferred surface formats and any can be chosen
+  if ((surface_formats.size() == 1) && (surface_formats[0].format == VK_FORMAT_UNDEFINED))
+    return{ VK_FORMAT_R8G8B8A8_UNORM, VK_COLORSPACE_SRGB_NONLINEAR_KHR };
+
+  // Check if list contains most widely used R8 G8 B8 A8 format
+  // with nonlinear color space
+  for (VkSurfaceFormatKHR &surface_format : surface_formats)
+    if (surface_format.format == VK_FORMAT_R8G8B8A8_UNORM)
+      return surface_format;
+
+  // Return the first format from the list
+  return surface_formats[0];
+}
+
+VkExtent2D Vulkan::GetSwapChainExtent(VkSurfaceCapabilitiesKHR& surface_capabilities)
+{
+  // if width == height == -1, that means window size will match to swapchain's size
+  // we define the size by ourselves but it must fit within defined confines
+  if (surface_capabilities.currentExtent.width == -1)
+  {
+    VkExtent2D swap_chain_extent = { static_cast<uint32_t>(winAPI.Width()), static_cast<uint32_t>(winAPI.Height()) };
+    if (swap_chain_extent.width < surface_capabilities.minImageExtent.width)
+      swap_chain_extent.width = surface_capabilities.minImageExtent.width;
+    if (swap_chain_extent.height < surface_capabilities.minImageExtent.height)
+      swap_chain_extent.height = surface_capabilities.minImageExtent.height;
+    if (swap_chain_extent.width > surface_capabilities.maxImageExtent.width)
+      swap_chain_extent.width = surface_capabilities.maxImageExtent.width;
+    if (swap_chain_extent.height > surface_capabilities.maxImageExtent.height)
+      swap_chain_extent.height = surface_capabilities.maxImageExtent.height;
+    return swap_chain_extent;
+  }
+
+  // if not, use window's size
+  return surface_capabilities.currentExtent;
+}
+
+VkImageUsageFlags Vulkan::GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& surface_capabilities)
+{
+  // VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT must always be supported
+  // We can define other usage flags but we always need to check if they are supported
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+    return VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+  OutputDebugString("VK_IMAGE_USAGE_TRANSFER_DST image usage is not supported by the swap chain!\n");
+  OutputDebugString("Supported swap chain's image usages include:\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_SRC_BIT) 
+    OutputDebugString("VK_IMAGE_USAGE_TRANSFER_SRC\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+    OutputDebugString("VK_IMAGE_USAGE_TRANSFER_DST\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_SAMPLED_BIT) 
+    OutputDebugString("VK_IMAGE_USAGE_SAMPLED\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_STORAGE_BIT) 
+    OutputDebugString("VK_IMAGE_USAGE_STORAGE\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)         
+    OutputDebugString("VK_IMAGE_USAGE_COLOR_ATTACHMENT\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+    OutputDebugString("VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT)
+    OutputDebugString("VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT\n");
+  if (surface_capabilities.supportedUsageFlags & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
+    OutputDebugString("VK_IMAGE_USAGE_INPUT_ATTACHMENT\n");
+
+  return static_cast<VkImageUsageFlags>(-1);
+}
+
+VkSurfaceTransformFlagBitsKHR Vulkan::GetSwapChainTransform(VkSurfaceCapabilitiesKHR &surface_capabilities)
+{
+  // Sometimes images must be transformed before they are presented
+  // portrait mode to landscape mode (ex)
+
+  // If the specified transform is other than current transform, presentation engine will transform image
+  // during presentation operation; this operation may hit performance on some platforms
+  
+  // Here we don't want any transformations to occur so if the identity transform is supported use it
+  // otherwise just use the same transform as current transform
+  if (surface_capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)
+    return VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+  else
+    return surface_capabilities.currentTransform;
 }
 
 bool Vulkan::Initialize()
