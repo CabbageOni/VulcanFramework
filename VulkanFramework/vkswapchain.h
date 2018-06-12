@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "vkbase.h"
 
 class VKSwapChain : public VKBase
@@ -14,6 +16,8 @@ private:
   VkSemaphore m_image_available_semaphore;
   VkSemaphore m_rendering_finished_semaphore;
   VkSwapchainKHR m_swap_chain;
+  std::vector<VkCommandBuffer> m_present_queue_cmd_buffers;
+  VkCommandPool m_present_queue_cmd_pool;
 
   virtual bool CreateInstance() override;
   bool CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions);
@@ -22,18 +26,22 @@ private:
                                     uint32_t& selected_graphics_queue_family_index,
                                     uint32_t &selected_present_queue_family_index);
   bool GetDeviceQueue() override;
+  bool OnWindowSizeChanged();
+  void Clear();
 
   //extensions required
   bool CreatePresentationSurface();
   bool CreateSemaphores();
   bool CreateSwapChain();
+  bool CreateCommandBuffers();
+  bool RecordCommandBuffers();
+
   uint32_t GetSwapChainNumImages(VkSurfaceCapabilitiesKHR &surface_capabilities);
   VkSurfaceFormatKHR GetSwapChainFormat(std::vector<VkSurfaceFormatKHR> &surface_formats);
   VkExtent2D GetSwapChainExtent(VkSurfaceCapabilitiesKHR &surface_capabilities);
   VkImageUsageFlags GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& surface_capabilities);
   VkSurfaceTransformFlagBitsKHR GetSwapChainTransform(VkSurfaceCapabilitiesKHR& surface_capabilities);
   VkPresentModeKHR GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes);
-  bool OnWindowSizeChanged();
 
   virtual bool Initialize() override;
   virtual void Update() override;

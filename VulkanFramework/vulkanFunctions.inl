@@ -56,11 +56,14 @@ LOAD_DEVICE_LEVEL(vkDeviceWaitIdle)
 LOAD_DEVICE_LEVEL(vkCreateSemaphore)
 
 #if VK_CURRENT_MODE == VK_SWAPCHAIN
+LOAD_DEVICE_LEVEL(vkQueueSubmit)
 LOAD_DEVICE_LEVEL(vkCreateSwapchainKHR)
 LOAD_DEVICE_LEVEL(vkDestroySwapchainKHR)
-//LOAD_DEVICE_LEVEL(vkGetSwapchainImagesKHR)
+LOAD_DEVICE_LEVEL(vkGetSwapchainImagesKHR)
 LOAD_DEVICE_LEVEL(vkAcquireNextImageKHR)
-//LOAD_DEVICE_LEVEL(vkQueuePresentKHR)
+LOAD_DEVICE_LEVEL(vkQueuePresentKHR)
+LOAD_DEVICE_LEVEL(vkCreateCommandPool)
+LOAD_DEVICE_LEVEL(vkAllocateCommandBuffers)
 #endif
 
 #undef LOAD_DEVICE_LEVEL
