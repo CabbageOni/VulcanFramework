@@ -1,4 +1,4 @@
-//nothice this doesn't have #pragma_once!                  
+//notice this doesn't have #pragma_once!                  
 
 #include "vkbase.h"
 
