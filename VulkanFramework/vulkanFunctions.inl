@@ -35,7 +35,7 @@ LOAD_INSTANCE_LEVEL(vkEnumerateDeviceExtensionProperties)
 
 #if VK_CURRENT_MODE == VK_SWAPCHAIN
 LOAD_INSTANCE_LEVEL(vkCreateWin32SurfaceKHR)
-//LOAD_INSTANCE_LEVEL(vkDestroySurfaceKHR)
+LOAD_INSTANCE_LEVEL(vkDestroySurfaceKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceSupportKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceFormatsKHR)
@@ -54,16 +54,23 @@ LOAD_DEVICE_LEVEL(vkGetDeviceQueue)
 LOAD_DEVICE_LEVEL(vkDestroyDevice)
 LOAD_DEVICE_LEVEL(vkDeviceWaitIdle)
 LOAD_DEVICE_LEVEL(vkCreateSemaphore)
+LOAD_DEVICE_LEVEL(vkDestroySemaphore)
+LOAD_DEVICE_LEVEL(vkQueueSubmit)
+LOAD_DEVICE_LEVEL(vkCreateCommandPool)
+LOAD_DEVICE_LEVEL(vkDestroyCommandPool)
+LOAD_DEVICE_LEVEL(vkAllocateCommandBuffers)
+LOAD_DEVICE_LEVEL(vkBeginCommandBuffer)
+LOAD_DEVICE_LEVEL(vkEndCommandBuffer)
+LOAD_DEVICE_LEVEL(vkFreeCommandBuffers)
+LOAD_DEVICE_LEVEL(vkCmdPipelineBarrier)
+LOAD_DEVICE_LEVEL(vkCmdClearColorImage)
 
 #if VK_CURRENT_MODE == VK_SWAPCHAIN
-LOAD_DEVICE_LEVEL(vkQueueSubmit)
 LOAD_DEVICE_LEVEL(vkCreateSwapchainKHR)
 LOAD_DEVICE_LEVEL(vkDestroySwapchainKHR)
 LOAD_DEVICE_LEVEL(vkGetSwapchainImagesKHR)
 LOAD_DEVICE_LEVEL(vkAcquireNextImageKHR)
 LOAD_DEVICE_LEVEL(vkQueuePresentKHR)
-LOAD_DEVICE_LEVEL(vkCreateCommandPool)
-LOAD_DEVICE_LEVEL(vkAllocateCommandBuffers)
 #endif
 
 #undef LOAD_DEVICE_LEVEL

@@ -286,19 +286,20 @@ bool VKSwapChain::OnWindowSizeChanged()
 
 void VKSwapChain::Clear()
 {
-  //if (Vulkan.Device != VK_NULL_HANDLE) {
-  //  vkDeviceWaitIdle(Vulkan.Device);
-  //
-  //  if ((Vulkan.PresentQueueCmdBuffers.size() > 0) && (Vulkan.PresentQueueCmdBuffers[0] != VK_NULL_HANDLE)) {
-  //    vkFreeCommandBuffers(Vulkan.Device, Vulkan.PresentQueueCmdPool, static_cast<uint32_t>/(Vulkan.PresentQueueCmdBuffers.size/()), Vulkan.PresentQueueCmdBuffers.data());
-  //    Vulkan.PresentQueueCmdBuffers.clear();
-  //  }
-  //
-  //  if (Vulkan.PresentQueueCmdPool != VK_NULL_HANDLE) {
-  //    vkDestroyCommandPool(Vulkan.Device, Vulkan.PresentQueueCmdPool, nullptr);
-  //    Vulkan.PresentQueueCmdPool = VK_NULL_HANDLE;
-  //  }
-  //}
+  if (m_device != VK_NULL_HANDLE)
+    vkDeviceWaitIdle(m_device);
+ 
+  if ((m_present_queue_cmd_buffers.size() > 0) && (m_present_queue_cmd_buffers[0] != VK_NULL_HANDLE))
+  {
+    vkFreeCommandBuffers(m_device, m_present_queue_cmd_pool, static_cast<uint32_t>(m_present_queue_cmd_buffers.size()), m_present_queue_cmd_buffers.data());
+    m_present_queue_cmd_buffers.clear();
+  }
+
+  if (m_present_queue_cmd_pool != VK_NULL_HANDLE)
+  {
+    vkDestroyCommandPool(m_device, m_present_queue_cmd_pool, nullptr);
+    m_present_queue_cmd_pool = VK_NULL_HANDLE;
+  }
 }
 
 bool VKSwapChain::CreatePresentationSurface()
@@ -391,44 +392,44 @@ bool VKSwapChain::CreateSwapChain()
   if (static_cast<int>(desired_present_mode) == -1)
     return false;
 
-// (0,0) window size can happen (like when minimized), just don't render
-//if ((desired_extent.width == 0) || (desired_extent.height == 0))
-//  return true;
+  // (0,0) window size can happen (like when minimized), just don't render
+  //if ((desired_extent.width == 0) || (desired_extent.height == 0))
+  //  return true;
 
-VkSwapchainCreateInfoKHR swap_chain_create_info = { //peek VkSwapchainCreateInfoKHR for detail
-VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-nullptr, 0,
-m_presentation_surface,
-desired_number_of_images,
-desired_format.format,
-desired_format.colorSpace,
-desired_extent,
-1,
-desired_usage,
-VK_SHARING_MODE_EXCLUSIVE, //exclusive: other queues can refer to images, but cannot do at once. (barrier feature in thread-like)
-0, nullptr, //needed if Sharing mode is concurrent, need to sync many queues from different queue families to avoid thread-like problem
-desired_transform,
-VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-desired_present_mode,
-VK_TRUE,
-old_swap_chain
-};
+  VkSwapchainCreateInfoKHR swap_chain_create_info = { //peek VkSwapchainCreateInfoKHR for detail
+  VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+  nullptr, 0,
+  m_presentation_surface,
+  desired_number_of_images,
+  desired_format.format,
+  desired_format.colorSpace,
+  desired_extent,
+  1,
+  desired_usage,
+  VK_SHARING_MODE_EXCLUSIVE, //exclusive: other queues can refer to images, but cannot do at once. (barrier feature in thread-like)
+  0, nullptr, //needed if Sharing mode is concurrent, need to sync many queues from different queue families to avoid thread-like problem
+  desired_transform,
+  VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+  desired_present_mode,
+  VK_TRUE,
+  old_swap_chain
+  };
 
-if (vkCreateSwapchainKHR(m_device, &swap_chain_create_info, nullptr, &m_swap_chain) != VK_SUCCESS)
-{
-assert("Could not create swap chain!", "Vulkan", Assert::Error);
-return false;
-}
+  if (vkCreateSwapchainKHR(m_device, &swap_chain_create_info, nullptr, &m_swap_chain) != VK_SUCCESS)
+  {
+    assert("Could not create swap chain!", "Vulkan", Assert::Error);
+    return false;
+  }
 
-//release old swap chain
-if (old_swap_chain != VK_NULL_HANDLE)
-vkDestroySwapchainKHR(m_device, old_swap_chain, nullptr);
+  //release old swap chain
+  if (old_swap_chain != VK_NULL_HANDLE)
+    vkDestroySwapchainKHR(m_device, old_swap_chain, nullptr);
 
-OutputDebugString("Recreating Swapchain...\n");
+  OutputDebugString("Recreating Swapchain...\n");
 
-//CanRender = true;
+  //CanRender = true;
 
-return true;
+  return true;
 }
 
 bool VKSwapChain::CreateCommandBuffers()
@@ -491,7 +492,7 @@ bool VKSwapChain::RecordCommandBuffers()
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
     nullptr,                                    
     VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-    nullptr //inheritanceinfo???                                     
+    nullptr                                    
   };
 
   VkClearColorValue clear_color = {
@@ -506,44 +507,46 @@ bool VKSwapChain::RecordCommandBuffers()
     1                          
   };
 
-  //for (uint32_t i = 0; i < image_count; ++i) {
-  //  VkImageMemoryBarrier barrier_from_present_to_clear = {
-  //    VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType                        sType
-  //    nullptr,                                    // const void                            *pNext
-  //    VK_ACCESS_MEMORY_READ_BIT,                  // VkAccessFlags                          srcAccessMask
-  //    VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags                          dstAccessMask
-  //    VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout                          oldLayout
-  //    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout                          newLayout
-  //    VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               srcQueueFamilyIndex
-  //    VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               dstQueueFamilyIndex
-  //    swap_chain_images[i],                       // VkImage                                image
-  //    image_subresource_range                     // VkImageSubresourceRange                subresourceRange
-  //  };
-  //
-  //  VkImageMemoryBarrier barrier_from_clear_to_present = {
-  //    VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType                        sType
-  //    nullptr,                                    // const void                            *pNext
-  //    VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags                          srcAccessMask
-  //    VK_ACCESS_MEMORY_READ_BIT,                  // VkAccessFlags                          dstAccessMask
-  //    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout                          oldLayout
-  //    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,            // VkImageLayout                          newLayout
-  //    VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               srcQueueFamilyIndex
-  //    VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               dstQueueFamilyIndex
-  //    swap_chain_images[i],                       // VkImage                                image
-  //    image_subresource_range                     // VkImageSubresourceRange                subresourceRange
-  //  };
-  //
-  //  vkBeginCommandBuffer(Vulkan.PresentQueueCmdBuffers[i], &cmd_buffer_begin_info);
-  //  vkCmdPipelineBarrier(Vulkan.PresentQueueCmdBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, /0, /0, nullptr, 0, nullptr, 1, &barrier_from_present_to_clear);
-  //
-  //  vkCmdClearColorImage(Vulkan.PresentQueueCmdBuffers[i], swap_chain_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //&clear_color, 1, &image_subresource_range);
-  //
-  //  vkCmdPipelineBarrier(Vulkan.PresentQueueCmdBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, //VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_clear_to_present);
-  //  if (vkEndCommandBuffer(Vulkan.PresentQueueCmdBuffers[i]) != VK_SUCCESS) {
-  //    std::cout << "Could not record command buffers!" << std::endl;
-  //    return false;
-  //  }
-  //}
+  for (uint32_t i = 0; i < image_count; ++i)
+  {
+    VkImageMemoryBarrier barrier_from_present_to_clear = {
+      VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     //  sType
+      nullptr,                                    // *pNext
+      VK_ACCESS_MEMORY_READ_BIT,                  //  srcAccessMask
+      VK_ACCESS_TRANSFER_WRITE_BIT,               //  dstAccessMask
+      VK_IMAGE_LAYOUT_UNDEFINED,                  //  oldLayout
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       //  newLayout
+      VK_QUEUE_FAMILY_IGNORED,                    //  srcQueueFamilyIndex
+      VK_QUEUE_FAMILY_IGNORED,                    //  dstQueueFamilyIndex
+      swap_chain_images[i],                       //  image
+      image_subresource_range                     //  subresourceRange
+    };
+
+    VkImageMemoryBarrier barrier_from_clear_to_present = {
+      VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType                        sType
+      nullptr,                                    // const void                            *pNext
+      VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags                          srcAccessMask
+      VK_ACCESS_MEMORY_READ_BIT,                  // VkAccessFlags                          dstAccessMask
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout                          oldLayout
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,            // VkImageLayout                          newLayout
+      VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               srcQueueFamilyIndex
+      VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               dstQueueFamilyIndex
+      swap_chain_images[i],                       // VkImage                                image
+      image_subresource_range                     // VkImageSubresourceRange                subresourceRange
+    };
+  
+    vkBeginCommandBuffer(m_present_queue_cmd_buffers[i], &cmd_buffer_begin_info);
+    vkCmdPipelineBarrier(m_present_queue_cmd_buffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_present_to_clear);
+
+    vkCmdClearColorImage(m_present_queue_cmd_buffers[i], swap_chain_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &image_subresource_range);
+    vkCmdPipelineBarrier(m_present_queue_cmd_buffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_clear_to_present);
+
+    if (vkEndCommandBuffer(m_present_queue_cmd_buffers[i]) != VK_SUCCESS)
+    {
+      assert("Could not record command buffers!", "Vulkan", Assert::Error);
+      return false;
+    }
+  }
 
   return true;
 }
@@ -730,8 +733,8 @@ void VKSwapChain::Update()
     1, // waitSemaphoreCount
     &m_image_available_semaphore, //wait
     &wait_dst_stage_mask,
-    0, //1, // commandBufferCount
-    nullptr, //&m_present_queue_cmd_buffers[image_index],
+    1, // commandBufferCount
+    &m_present_queue_cmd_buffers[image_index],
     1, // signalSemaphoreCount
     &m_rendering_finished_semaphore //signal
   };
@@ -774,13 +777,27 @@ void VKSwapChain::Update()
 
 void VKSwapChain::Terminate()
 {
-//warning! all releasing should be in order!
+  Clear();
 
+  //warning! all releasing should be in order!
   if (m_device != VK_NULL_HANDLE)
   {
     vkDeviceWaitIdle(m_device);
+
+    if (m_image_available_semaphore != VK_NULL_HANDLE)
+      vkDestroySemaphore(m_device, m_image_available_semaphore, nullptr);
+
+    if (m_rendering_finished_semaphore != VK_NULL_HANDLE)
+      vkDestroySemaphore(m_device, m_rendering_finished_semaphore, nullptr);
+
+    if (m_swap_chain != VK_NULL_HANDLE)
+      vkDestroySwapchainKHR(m_device, m_swap_chain, nullptr);
+
     vkDestroyDevice(m_device, nullptr);
   }
+
+  if (m_presentation_surface != VK_NULL_HANDLE)
+    vkDestroySurfaceKHR(m_instance, m_presentation_surface, nullptr);
 
   if (m_instance != VK_NULL_HANDLE)
     vkDestroyInstance(m_instance, nullptr);
