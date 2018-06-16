@@ -337,10 +337,9 @@ bool VKSwapChain::CreateSemaphores()
 bool VKSwapChain::CreateSwapChain()
 {
   //CanRender = false;
-  //
-  //if (Vulkan.Device != VK_NULL_HANDLE) {
-  //  vkDeviceWaitIdle(Vulkan.Device);
-  //}
+
+  if (m_device != VK_NULL_HANDLE)
+    vkDeviceWaitIdle(m_device);
 
   VkSurfaceCapabilitiesKHR surface_capabilities;
   if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physical_device, m_presentation_surface, &surface_capabilities) != VK_SUCCESS)
@@ -655,12 +654,12 @@ VkPresentModeKHR VKSwapChain::GetSwapChainPresentMode(std::vector<VkPresentModeK
   // Mailbox is not, but more stable like triple-buffering (v-sync)
 
   //if supports mailbox, use it
-  for (VkPresentModeKHR &present_mode : present_modes)
-    if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
-    {
-      OutputDebugString("Present mode: Mailbox\n");
-      return present_mode;
-    }
+  //for (VkPresentModeKHR &present_mode : present_modes)
+  //  if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+  //  {
+  //    OutputDebugString("Present mode: Mailbox\n");
+  //    return present_mode;
+  //  }
 
   //otherwise use fifo
   for (VkPresentModeKHR &present_mode : present_modes)
@@ -739,7 +738,7 @@ void VKSwapChain::Update()
     &m_rendering_finished_semaphore //signal
   };
 
-  if (vkQueueSubmit(m_present_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
+  if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
   {
     assert("Problem occurred during swap chain image submission!", "Vulkan", Assert::Error);
     engine.Quit();

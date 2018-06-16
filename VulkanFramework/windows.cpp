@@ -1,5 +1,6 @@
 #include <Windows.h>
 #include <chrono>
+#include <string>
 
 #ifndef NDEBUG
 #define CRTDBG_MAP_ALLOC

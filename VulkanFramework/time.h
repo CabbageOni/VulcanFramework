@@ -14,7 +14,7 @@ private:
 
 public:
   float dt() const { return m_delta_time; }
-
+  
   friend void Begin();
   friend void Update();
 } timer;

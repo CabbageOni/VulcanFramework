@@ -16,3 +16,18 @@ void Time::Update()
   m_delta_time = std::chrono::duration_cast<std::chrono::microseconds>(now - m_prev_time).count() / 1000000.0f;
   m_prev_time = now;
 }
+
+//#ifndef NDEBUG
+//void Time::PerformanceCheckFrom()
+//{
+//  performanceCheck = std::chrono::high_resolution_clock::now();
+//}
+//
+//void Time::PerformanceCheckTo()
+//{
+//  using namespace std::chrono;
+//
+//  performanceCheckAverage += duration_cast<nanoseconds>(high_resolution_clock::now() - performanceCheck).count();
+//  ++performanceCheckFrameCount;
+//}
+//#endif
