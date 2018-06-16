@@ -1,4 +1,3 @@
-
 #include <string>
 #include <vector>
 
@@ -7,11 +6,11 @@
 #include "system.h"
 #include "assert.h"
 
-#include "vkswapchain.h"
+#include "vkfirsttriangle.h"
 
-#if VK_CURRENT_MODE == VK_SWAPCHAIN
+#if VK_CURRENT_MODE == VK_FIRST_TRIANGLE
 
-bool VKSwapChain::CreateInstance()
+bool VKFirstTriangle::CreateInstance()
 {
   uint32_t extensions_count = 0;
   if ((vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, nullptr) != VK_SUCCESS) || (extensions_count == 0))
@@ -30,35 +29,35 @@ bool VKSwapChain::CreateInstance()
 
   std::vector<const char*> extensions =
   {
-  VK_KHR_SURFACE_EXTENSION_NAME, //displaying window extension
-  VK_KHR_WIN32_SURFACE_EXTENSION_NAME, //exclusive for Windows OS
+    VK_KHR_SURFACE_EXTENSION_NAME, //displaying window extension
+    VK_KHR_WIN32_SURFACE_EXTENSION_NAME, //exclusive for Windows OS
   };
 
   //for each extensions search for specific extension
   for (size_t i = 0; i < extensions.size(); ++i)
-  if (!CheckExtensionAvailability(extensions[i], available_extensions))
-  {
-    assert(("Could not find instance extension named \"" + std::string(extensions[i]) + "\"!").c_str(), "Vulkan", Assert::Error);
-    return false;
-  }
+    if (!CheckExtensionAvailability(extensions[i], available_extensions))
+    {
+      assert(("Could not find instance extension named \"" + std::string(extensions[i]) + "\"!").c_str(), "Vulkan", Assert::Error);
+      return false;
+    }
 
   VkApplicationInfo application_info = { //peek VkApplicationInfo for more details
-  VK_STRUCTURE_TYPE_APPLICATION_INFO,
-  nullptr,
-  "Vulkan Framework",
-  VK_MAKE_VERSION(1, 0, 0),
-  "Vulkan Framework",
-  VK_MAKE_VERSION(1, 0, 0),
-  VK_API_VERSION_1_0
+    VK_STRUCTURE_TYPE_APPLICATION_INFO,
+    nullptr,
+    "Vulkan Framework",
+    VK_MAKE_VERSION(1, 0, 0),
+    "Vulkan Framework",
+    VK_MAKE_VERSION(1, 0, 0),
+    VK_API_VERSION_1_0
   };
 
   VkInstanceCreateInfo instance_create_info = { //peek VkInstanceCreateInfo for more details
-  VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-  nullptr, 0,
-  &application_info,
-  0, nullptr,
-  static_cast<uint32_t>(extensions.size()), //enabledExtensionCount
-  &extensions[0] //enabledExtensionNames
+    VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+    nullptr, 0,
+    &application_info,
+    0, nullptr,
+    static_cast<uint32_t>(extensions.size()), //enabledExtensionCount
+    &extensions[0] //enabledExtensionNames
   };
 
   if (vkCreateInstance(&instance_create_info, nullptr, &m_instance) != VK_SUCCESS)
@@ -70,15 +69,15 @@ bool VKSwapChain::CreateInstance()
   return true;
 }
 
-bool VKSwapChain::CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions)
+bool VKFirstTriangle::CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions)
 {
   for (size_t i = 0; i < available_extensions.size(); ++i)
     if (strcmp(available_extensions[i].extensionName, extension_name) == 0)
       return true;
-return false;
+  return false;
 }
 
-bool VKSwapChain::CreateDevice()
+bool VKFirstTriangle::CreateDevice()
 {
   uint32_t num_devices = 0;
   if ((vkEnumeratePhysicalDevices(m_instance, &num_devices, nullptr) != VK_SUCCESS) || (num_devices == 0))
@@ -114,41 +113,41 @@ bool VKSwapChain::CreateDevice()
 
   std::vector<VkDeviceQueueCreateInfo> queue_create_infos;
   std::vector<float> queue_priorities = { 1.0f }; //higher float = given more time to compute, but not always garunteed
-  //also only per device, independent from other devices
+                                                  //also only per device, independent from other devices
 
-  queue_create_infos.push_back( { //peek VkDeviceQueueCreateInfo for more details
-  VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-  nullptr, 0,
-  selected_graphics_queue_family_index,
-  static_cast<uint32_t>(queue_priorities.size()),
-  queue_priorities.data()
-  });
+  queue_create_infos.push_back({ //peek VkDeviceQueueCreateInfo for more details
+    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+    nullptr, 0,
+    selected_graphics_queue_family_index,
+    static_cast<uint32_t>(queue_priorities.size()),
+    queue_priorities.data()
+    });
 
   //if graphics and present uses different queue family
   if (selected_graphics_queue_family_index != selected_present_queue_family_index)
   {
     queue_create_infos.push_back({ //peek VkDeviceQueueCreateInfo for more details
-    VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-    nullptr, 0,
-    selected_present_queue_family_index,
-    static_cast<uint32_t>(queue_priorities.size()),
-    queue_priorities.data()
-    });
+      VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+      nullptr, 0,
+      selected_present_queue_family_index,
+      static_cast<uint32_t>(queue_priorities.size()),
+      queue_priorities.data()
+      });
   }
 
   std::vector<const char*> extensions = {
-  VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
   };
 
   VkDeviceCreateInfo device_create_info = { //peek VkDeviceCreateInfo for more details
-  VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-  nullptr, 0,
-  static_cast<uint32_t>(queue_create_infos.size()), //num of queue families
-  queue_create_infos.data(),
-  0, nullptr,
-  static_cast<uint32_t>(extensions.size()),
-  extensions.data(),
-  nullptr // pointer to device features
+    VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    nullptr, 0,
+    static_cast<uint32_t>(queue_create_infos.size()), //num of queue families
+    queue_create_infos.data(),
+    0, nullptr,
+    static_cast<uint32_t>(extensions.size()),
+    extensions.data(),
+    nullptr // pointer to device features
   };
 
   if (vkCreateDevice(m_physical_device, &device_create_info, nullptr, &m_device) != VK_SUCCESS)
@@ -162,9 +161,9 @@ bool VKSwapChain::CreateDevice()
   return true;
 }
 
-bool VKSwapChain::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
-uint32_t& selected_graphics_queue_family_index,
-uint32_t& selected_present_queue_family_index)
+bool VKFirstTriangle::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
+  uint32_t& selected_graphics_queue_family_index,
+  uint32_t& selected_present_queue_family_index)
 {
   VkPhysicalDeviceProperties device_properties;
   VkPhysicalDeviceFeatures   device_features;
@@ -187,7 +186,7 @@ uint32_t& selected_present_queue_family_index)
   }
 
   std::vector<const char*> device_extensions = {
-  VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
   };
 
   for (size_t i = 0; i < device_extensions.size(); ++i)
@@ -233,13 +232,13 @@ uint32_t& selected_present_queue_family_index)
       if (graphics_queue_family_index == UINT32_MAX)
         graphics_queue_family_index = i;
 
-    // If there is queue that supports both graphics and present - prefer it
+      // If there is queue that supports both graphics and present - prefer it
       if (queue_present_support[i])
       {
         selected_graphics_queue_family_index = i;
         selected_present_queue_family_index = i;
         OutputDebugString(("Selected device: " + std::string(device_properties.deviceName) + "\n").c_str());
-      return true;
+        return true;
       }
     }
   }
@@ -267,16 +266,19 @@ uint32_t& selected_present_queue_family_index)
   return true;
 }
 
-bool VKSwapChain::GetDeviceQueue()
+bool VKFirstTriangle::GetDeviceQueue()
 {
   vkGetDeviceQueue(m_device, m_graphics_queue_family_index, 0, &m_graphics_queue); //need to call this per loading queue!
   vkGetDeviceQueue(m_device, m_present_queue_family_index, 0, &m_present_queue);
   return true;
 }
 
-bool VKSwapChain::OnWindowSizeChanged()
+bool VKFirstTriangle::OnWindowSizeChanged()
 {
   Clear();
+
+  if (!CreateRenderPass())
+    return false;
 
   if (!CreateSwapChain())
     return false;
@@ -287,11 +289,11 @@ bool VKSwapChain::OnWindowSizeChanged()
   return true;
 }
 
-void VKSwapChain::Clear()
+void VKFirstTriangle::Clear()
 {
   if (m_device != VK_NULL_HANDLE)
     vkDeviceWaitIdle(m_device);
- 
+
   if ((m_present_queue_cmd_buffers.size() > 0) && (m_present_queue_cmd_buffers[0] != VK_NULL_HANDLE))
   {
     vkFreeCommandBuffers(m_device, m_present_queue_cmd_pool, static_cast<uint32_t>(m_present_queue_cmd_buffers.size()), m_present_queue_cmd_buffers.data());
@@ -305,30 +307,30 @@ void VKSwapChain::Clear()
   }
 }
 
-bool VKSwapChain::CreatePresentationSurface()
+bool VKFirstTriangle::CreatePresentationSurface()
 {
-VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
-VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-nullptr, 0,
-winAPI.InstanceHandle(), // HINSTANCE hinstance
-winAPI.WindowHandle() // HWND hwnd
-};
+  VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
+    VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+    nullptr, 0,
+    winAPI.InstanceHandle(), // HINSTANCE hinstance
+    winAPI.WindowHandle() // HWND hwnd
+  };
 
-if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
-return true;
+  if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
+    return true;
 
-assert("Could not create presentation surface!", "Vulkan", Assert::Error);
-return false;
+  assert("Could not create presentation surface!", "Vulkan", Assert::Error);
+  return false;
 }
 
-bool VKSwapChain::CreateSemaphores()
+bool VKFirstTriangle::CreateSemaphores()
 {
   VkSemaphoreCreateInfo semaphore_create_info = { //peek VkSemaphoreCreateInfo for details
-  VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-  nullptr, 0 };
+    VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    nullptr, 0 };
 
   if ((vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_image_available_semaphore) != VK_SUCCESS) ||
-  (vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_rendering_finished_semaphore) != VK_SUCCESS))
+    (vkCreateSemaphore(m_device, &semaphore_create_info, nullptr, &m_rendering_finished_semaphore) != VK_SUCCESS))
   {
     assert("Could not create semaphores!", "Vulkan", Assert::Error);
     return false;
@@ -337,7 +339,7 @@ bool VKSwapChain::CreateSemaphores()
   return true;
 }
 
-bool VKSwapChain::CreateSwapChain()
+bool VKFirstTriangle::CreateSwapChain()
 {
   OutputDebugString("Recreating Swapchain...\n");
 
@@ -384,7 +386,7 @@ bool VKSwapChain::CreateSwapChain()
   VkPresentModeKHR              desired_present_mode = GetSwapChainPresentMode(present_modes);
   VkExtent2D                    desired_extent = GetSwapChainExtent(surface_capabilities);
   uint32_t                      desired_number_of_images = GetSwapChainNumImages(surface_capabilities);
-  m_swap_chain_format = GetSwapChainFormat(surface_formats);
+                                m_swap_chain_format = GetSwapChainFormat(surface_formats);
   VkSurfaceTransformFlagBitsKHR desired_transform = GetSwapChainTransform(surface_capabilities);
   VkSwapchainKHR                old_swap_chain = m_swap_chain;
 
@@ -426,11 +428,11 @@ bool VKSwapChain::CreateSwapChain()
   //release old swap chain
   if (old_swap_chain != VK_NULL_HANDLE)
     vkDestroySwapchainKHR(m_device, old_swap_chain, nullptr);
-
+  
   return true;
 }
 
-bool VKSwapChain::CreateCommandBuffers()
+bool VKFirstTriangle::CreateCommandBuffers()
 {
   VkCommandPoolCreateInfo cmd_pool_create_info = { // peek VkCommandPoolCreateInfo for more detail
     VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
@@ -454,8 +456,8 @@ bool VKSwapChain::CreateCommandBuffers()
   m_present_queue_cmd_buffers.resize(image_count);
 
   VkCommandBufferAllocateInfo cmd_buffer_allocate_info = { //peek VkCommandBufferAllocateInfo for more detail
-    VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, 
-    nullptr,                                       
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+    nullptr,
     m_present_queue_cmd_pool,
     VK_COMMAND_BUFFER_LEVEL_PRIMARY,
     image_count //buffercount
@@ -475,7 +477,7 @@ bool VKSwapChain::CreateCommandBuffers()
   return true;
 }
 
-bool VKSwapChain::RecordCommandBuffers()
+bool VKFirstTriangle::RecordCommandBuffers()
 {
   uint32_t image_count = static_cast<uint32_t>(m_present_queue_cmd_buffers.size());
 
@@ -488,9 +490,9 @@ bool VKSwapChain::RecordCommandBuffers()
 
   VkCommandBufferBeginInfo cmd_buffer_begin_info = {
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    nullptr,                                    
+    nullptr,
     VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-    nullptr                                    
+    nullptr
   };
 
   VkClearColorValue clear_color = {
@@ -498,11 +500,11 @@ bool VKSwapChain::RecordCommandBuffers()
   };
 
   VkImageSubresourceRange image_subresource_range = {
-    VK_IMAGE_ASPECT_COLOR_BIT, 
-    0,                         
-    1,                         
-    0,                         
-    1                          
+    VK_IMAGE_ASPECT_COLOR_BIT,
+    0,
+    1,
+    0,
+    1
   };
 
   for (uint32_t i = 0; i < image_count; ++i)
@@ -532,7 +534,7 @@ bool VKSwapChain::RecordCommandBuffers()
       swap_chain_images[i],                       // VkImage                                image
       image_subresource_range                     // VkImageSubresourceRange                subresourceRange
     };
-  
+
     vkBeginCommandBuffer(m_present_queue_cmd_buffers[i], &cmd_buffer_begin_info);
     vkCmdPipelineBarrier(m_present_queue_cmd_buffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_present_to_clear);
 
@@ -549,7 +551,93 @@ bool VKSwapChain::RecordCommandBuffers()
   return true;
 }
 
-uint32_t VKSwapChain::GetSwapChainNumImages(VkSurfaceCapabilitiesKHR& surface_capabilities)
+bool VKFirstTriangle::CreateRenderPass()
+{
+  VkAttachmentDescription attachment_descriptions[1] = {
+    {
+      0,                                          // flags
+      m_swap_chain_format.format,                 // format
+      VK_SAMPLE_COUNT_1_BIT,                      // samples
+      VK_ATTACHMENT_LOAD_OP_CLEAR,                // loadOp = operation on load
+      VK_ATTACHMENT_STORE_OP_STORE,               // storeOp = operation after renderpass
+      VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // stencilLoadOp
+      VK_ATTACHMENT_STORE_OP_DONT_CARE,           // stencilStoreOp
+      VK_IMAGE_LAYOUT_UNDEFINED,                  // initialLayout
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR             // finalLayout
+    }
+  };
+
+  VkAttachmentReference color_attachment_references[1] = {
+    {
+      0,                                          // attachment index?
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL    // layout
+    }
+  };
+  
+  VkSubpassDescription subpass_descriptions[1] = {
+    {
+      0,                                          // flags
+      VK_PIPELINE_BIND_POINT_GRAPHICS,            // pipelineBindPoint
+      0,                                          // inputAttachmentCount
+      nullptr,                                    // pInputAttachments
+      1,                                          // colorAttachmentCount
+      color_attachment_references,                // pColorAttachments
+      nullptr,                                    // pResolveAttachments
+      nullptr,                                    // pDepthStencilAttachment
+      0,                                          // preserveAttachmentCount
+      nullptr                                     // pPreserveAttachments
+    }
+  };
+  
+  VkRenderPassCreateInfo render_pass_create_info = {
+    VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,    // sType
+    nullptr,                                      // pNext
+    0,                                            // flags
+    1,                                            // attachmentCount
+    attachment_descriptions,                      // pAttachments
+    1,                                            // subpassCount
+    subpass_descriptions,                         // pSubpasses
+    0,                                            // dependencyCount
+    nullptr                                       // pDependencies
+  };
+  
+  if (vkCreateRenderPass(m_device, &render_pass_create_info, nullptr, &m_render_pass) != VK_SUCCESS)
+  {
+    assert("Could not create render pass!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  return true;
+}
+
+bool VKFirstTriangle::CreateFrameBuffers()
+{
+  const std::vector<ImageInfo>& swap_chain_images = m_swap_chain_images;
+  //m_frame_buffers.resize(swap_chain_images.size());
+
+  //for (size_t i = 0; i < swap_chain_images.size(); ++i) {
+  //  VkFramebufferCreateInfo framebuffer_create_info = {
+  //    VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // VkStructureType                sType
+  //    nullptr,                                    // const void                    *pNext
+  //    0,                                          // VkFramebufferCreateFlags       flags
+  //    Vulkan.RenderPass,                          // VkRenderPass                   renderPass
+  //    1,                                          // uint32_t                       attachmentCount
+  //    &swap_chain_images[i].View,                 // const VkImageView             *pAttachments
+  //    300,                                        // uint32_t                       width
+  //    300,                                        // uint32_t                       height
+  //    1                                           // uint32_t                       layers
+  //  };
+  //
+  //  if (vkCreateFramebuffer(GetDevice(), &framebuffer_create_info, nullptr, &Vulkan.Framebuffers[i]) != VK_SUCCESS) {
+  //    std::cout << "Could not create a framebuffer!" << std::endl;
+  //    return false;
+  //  }
+  //}
+
+  return true;
+}
+
+uint32_t VKFirstTriangle::GetSwapChainNumImages(VkSurfaceCapabilitiesKHR& surface_capabilities)
 {
   //Image ~= FrameBuffer
   //(ex) needs at least 2 for double buffer
@@ -562,7 +650,7 @@ uint32_t VKSwapChain::GetSwapChainNumImages(VkSurfaceCapabilitiesKHR& surface_ca
   return image_count;
 }
 
-VkSurfaceFormatKHR VKSwapChain::GetSwapChainFormat(std::vector<VkSurfaceFormatKHR>& surface_formats)
+VkSurfaceFormatKHR VKFirstTriangle::GetSwapChainFormat(std::vector<VkSurfaceFormatKHR>& surface_formats)
 {
   // If the list contains only one entry with undefined format
   // it means that there are no preferred surface formats and any can be chosen
@@ -579,7 +667,7 @@ VkSurfaceFormatKHR VKSwapChain::GetSwapChainFormat(std::vector<VkSurfaceFormatKH
   return surface_formats[0];
 }
 
-VkExtent2D VKSwapChain::GetSwapChainExtent(VkSurfaceCapabilitiesKHR& surface_capabilities)
+VkExtent2D VKFirstTriangle::GetSwapChainExtent(VkSurfaceCapabilitiesKHR& surface_capabilities)
 {
   // if width == height == -1, that means window size will match to swapchain's size
   // we define the size by ourselves but it must fit within defined confines
@@ -601,7 +689,7 @@ VkExtent2D VKSwapChain::GetSwapChainExtent(VkSurfaceCapabilitiesKHR& surface_cap
   return surface_capabilities.currentExtent;
 }
 
-VkImageUsageFlags VKSwapChain::GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& surface_capabilities)
+VkImageUsageFlags VKFirstTriangle::GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& surface_capabilities)
 {
   // VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT must always be supported
   // We can define other usage flags but we always need to check if they are supported
@@ -630,7 +718,7 @@ VkImageUsageFlags VKSwapChain::GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& 
   return static_cast<VkImageUsageFlags>(-1);
 }
 
-VkSurfaceTransformFlagBitsKHR VKSwapChain::GetSwapChainTransform(VkSurfaceCapabilitiesKHR& surface_capabilities)
+VkSurfaceTransformFlagBitsKHR VKFirstTriangle::GetSwapChainTransform(VkSurfaceCapabilitiesKHR& surface_capabilities)
 {
   // Sometimes images must be transformed before they are presented
   // portrait mode to landscape mode (ex)
@@ -646,7 +734,7 @@ VkSurfaceTransformFlagBitsKHR VKSwapChain::GetSwapChainTransform(VkSurfaceCapabi
     return surface_capabilities.currentTransform;
 }
 
-VkPresentModeKHR VKSwapChain::GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes)
+VkPresentModeKHR VKFirstTriangle::GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes)
 {
   // available present modes: Immediate, FIFO(Relax), Mailbox
   // FIFO is always available
@@ -672,42 +760,42 @@ VkPresentModeKHR VKSwapChain::GetSwapChainPresentMode(std::vector<VkPresentModeK
   return static_cast<VkPresentModeKHR>(-1);
 }
 
-bool VKSwapChain::Initialize()
+bool VKFirstTriangle::Initialize()
 {
 #define CHECK(x) if (!x()) return false;
 
-CHECK(LoadVulkanLibrary)
-CHECK(LoadExportedEntryPoints)
-CHECK(LoadGlobalLevelEntryPoints)
-CHECK(CreateInstance)
-CHECK(LoadInstanceLevelEntryPoints)
-CHECK(CreatePresentationSurface)
-CHECK(CreateDevice)
-CHECK(LoadDeviceLevelEntryPoints)
-CHECK(GetDeviceQueue)
-CHECK(CreateSemaphores)
+  CHECK(LoadVulkanLibrary)
+    CHECK(LoadExportedEntryPoints)
+    CHECK(LoadGlobalLevelEntryPoints)
+    CHECK(CreateInstance)
+    CHECK(LoadInstanceLevelEntryPoints)
+    CHECK(CreatePresentationSurface)
+    CHECK(CreateDevice)
+    CHECK(LoadDeviceLevelEntryPoints)
+    CHECK(GetDeviceQueue)
+    CHECK(CreateSemaphores)
 
-CHECK(CreateSwapChain)
-CHECK(CreateCommandBuffers)
+    CHECK(CreateSwapChain)
+    CHECK(CreateCommandBuffers)
 
 #undef Run
 
-return true;
+    return true;
 }
 
-void VKSwapChain::Update()
+void VKFirstTriangle::Update()
 {
   uint32_t image_index;
-  
+
   // acquiring next image to draw
   // may wait for presentation engine to finish its job
   VkResult result = vkAcquireNextImageKHR(m_device,
-                                          m_swap_chain,
-                                          UINT64_MAX, //timeout, max time wait for next image
-                                          m_image_available_semaphore,
-                                          VK_NULL_HANDLE,
-                                          &image_index);
-  
+    m_swap_chain,
+    UINT64_MAX, //timeout, max time wait for next image
+    m_image_available_semaphore,
+    VK_NULL_HANDLE,
+    &image_index);
+
   switch (result)
   {
   case VK_SUCCESS:
@@ -752,7 +840,7 @@ void VKSwapChain::Update()
     &m_rendering_finished_semaphore,
     1, // swapchainCount
     &m_swap_chain,
-    &image_index, 
+    &image_index,
     nullptr
   };
   result = vkQueuePresentKHR(m_present_queue, &present_info);
@@ -773,7 +861,7 @@ void VKSwapChain::Update()
   }
 }
 
-void VKSwapChain::Terminate()
+void VKFirstTriangle::Terminate()
 {
   Clear();
 

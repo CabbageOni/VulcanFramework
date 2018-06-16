@@ -2,8 +2,8 @@
 
 #include "vkbase.h"
 
-#include "using_vk_mode.setting"
-
 #if VK_CURRENT_MODE == VK_SWAPCHAIN
 #include "vkswapchain.h"
+#elif VK_CURRENT_MODE == VK_FIRST_TRIANGLE
+#include "vkfirsttriangle.h"
 #endif

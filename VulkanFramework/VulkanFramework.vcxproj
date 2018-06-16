@@ -120,7 +120,14 @@
     <ClCompile Include="time.cpp" />
     <ClCompile Include="myvulkan.cpp" />
     <ClCompile Include="vkbase.cpp" />
-    <ClCompile Include="vkswapchain.cpp" />
+    <ClCompile Include="vkfirsttriangle.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="vkswapchain.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="windows.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -146,8 +153,15 @@
     <ClInclude Include="system.h" />
     <ClInclude Include="time.h" />
     <ClInclude Include="myvulkan.h" />
+    <ClInclude Include="vkfirsttriangle.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="vkmode.h" />
-    <ClInclude Include="vkswapchain.h" />
+    <ClInclude Include="vkswapchain.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="using_vk_mode.setting">

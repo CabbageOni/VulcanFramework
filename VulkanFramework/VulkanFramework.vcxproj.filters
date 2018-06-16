@@ -33,6 +33,9 @@
     <Filter Include="소스 파일\Vulkan\SwapChain">
       <UniqueIdentifier>{17276bea-e848-4d53-b445-74757c81a1e0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Vulkan\FirstTriangle">
+      <UniqueIdentifier>{94ebca88-95c5-4f8a-b102-7e6dc88e9a3c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="windows.cpp">
@@ -55,6 +58,9 @@
     </ClCompile>
     <ClCompile Include="vkbase.cpp">
       <Filter>소스 파일\Vulkan\Base</Filter>
+    </ClCompile>
+    <ClCompile Include="vkfirsttriangle.cpp">
+      <Filter>소스 파일\Vulkan\FirstTriangle</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -129,6 +135,9 @@
     </ClInclude>
     <ClInclude Include="vkswapchain.h">
       <Filter>소스 파일\Vulkan\SwapChain</Filter>
+    </ClInclude>
+    <ClInclude Include="vkfirsttriangle.h">
+      <Filter>소스 파일\Vulkan\FirstTriangle</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

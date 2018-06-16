@@ -1,5 +1,7 @@
 #pragma once
 
+#include "using_vk_mode.setting"
+
 class VKBase
 {
 private:

@@ -1,12 +1,17 @@
 //available modes
 #define VK_BASE 0
 #define VK_SWAPCHAIN 1
+#define VK_FIRST_TRIANGLE 2
 
 //currently using mode
-#define VK_CURRENT_MODE VK_SWAPCHAIN
+#define VK_CURRENT_MODE VK_FIRST_TRIANGLE
 
-#if VK_CURRENT_MODE == 0
+#if VK_CURRENT_MODE == VK_BASE
 #define VK_CURRENT_MODE_CLASS_NAME VKBase
 #elif VK_CURRENT_MODE == VK_SWAPCHAIN
 #define VK_CURRENT_MODE_CLASS_NAME VKSwapChain
+#elif VK_CURRENT_MODE == VK_FIRST_TRIANGLE
+#define VK_CURRENT_MODE_CLASS_NAME VKFirstTriangle
+#else
+#error Current Vulkan Mode invalid!
 #endif
