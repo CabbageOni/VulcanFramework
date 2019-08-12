@@ -12,11 +12,6 @@
 #include "time.h"
 #include "myvulkan.h"
 
-//todo:
-// Initialize ~ Terminate
-// Link winAPI to Vulkan
-// Input
-
 void UpdateClientRect(const HWND& hwnd)
 {
   POINT p;
@@ -100,40 +95,29 @@ bool Initialize()
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //memory leak check
 #endif
 
-  //console.Initialize();
   if (!vulkan.Initialize()) return false;
-  //models.Initialize();
 
   return true;
 }
 
 void Begin()
 {
-  //level->Begin();
-  //graphics.Begin();
   timer.Begin();
-  //input.Begin();
 }
 
 void Update()
 {
-  //level->Update();
   vulkan.Update();
-  //MyImGui::Implementation();
-  //input.Update();
   timer.Update();
 }
 
 void End()
 {
-  //graphics.End();
-  //level->End();
 }
 
 void Terminate()
 {
   vulkan.Terminate();
-  //models.Terminate();
 }
 
 int CALLBACK WinMain(HINSTANCE h_instance, HINSTANCE, LPSTR, int)

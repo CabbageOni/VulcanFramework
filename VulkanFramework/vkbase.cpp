@@ -208,7 +208,7 @@ bool VKBase::Initialize()
 {
 #define CHECK(x) if (!x()) return false;
 
-  CHECK(LoadVulkanLibrary)
+    CHECK(LoadVulkanLibrary)
     CHECK(LoadExportedEntryPoints)
     CHECK(LoadGlobalLevelEntryPoints)
     CHECK(CreateInstance)
@@ -216,7 +216,7 @@ bool VKBase::Initialize()
     CHECK(CreateDevice)
     CHECK(LoadDeviceLevelEntryPoints)
 
-#undef Run
+#undef CHECK
 
     return true;
 }
