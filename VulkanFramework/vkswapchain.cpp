@@ -307,18 +307,18 @@ void VKSwapChain::Clear()
 
 bool VKSwapChain::CreatePresentationSurface()
 {
-VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
-VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-nullptr, 0,
-winAPI.InstanceHandle(), // HINSTANCE hinstance
-winAPI.WindowHandle() // HWND hwnd
-};
+  VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
+  VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+  nullptr, 0,
+  winAPI.InstanceHandle(), // HINSTANCE hinstance
+  winAPI.WindowHandle() // HWND hwnd
+  };
 
-if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
-return true;
+  if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
+    return true;
 
-assert("Could not create presentation surface!", "Vulkan", Assert::Error);
-return false;
+  assert("Could not create presentation surface!", "Vulkan", Assert::Error);
+  return false;
 }
 
 bool VKSwapChain::CreateSemaphores()

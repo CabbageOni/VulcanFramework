@@ -16,6 +16,7 @@ private:
   VkSemaphore m_image_available_semaphore;
   VkSemaphore m_rendering_finished_semaphore;
   VkSwapchainKHR m_swap_chain;
+  VkSurfaceFormatKHR m_swap_chain_format;
   std::vector<VkCommandBuffer> m_present_queue_cmd_buffers;
   VkCommandPool m_present_queue_cmd_pool;
 
