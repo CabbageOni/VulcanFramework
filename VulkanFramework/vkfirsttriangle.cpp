@@ -778,7 +778,7 @@ bool VKFirstTriangle::Initialize()
     CHECK(CreateSwapChain)
     CHECK(CreateCommandBuffers)
 
-#undef Run
+#undef CHECK
 
     return true;
 }

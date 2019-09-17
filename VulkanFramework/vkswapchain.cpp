@@ -239,7 +239,7 @@ uint32_t& selected_present_queue_family_index)
         selected_graphics_queue_family_index = i;
         selected_present_queue_family_index = i;
         OutputDebugString(("Selected device: " + std::string(device_properties.deviceName) + "\n").c_str());
-      return true;
+        return true;
       }
     }
   }
@@ -690,7 +690,7 @@ CHECK(CreateSemaphores)
 CHECK(CreateSwapChain)
 CHECK(CreateCommandBuffers)
 
-#undef Run
+#undef CHECK
 
 return true;
 }
