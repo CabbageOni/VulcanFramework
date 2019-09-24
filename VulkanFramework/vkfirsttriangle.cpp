@@ -736,17 +736,17 @@ VkSurfaceTransformFlagBitsKHR VKFirstTriangle::GetSwapChainTransform(VkSurfaceCa
 
 VkPresentModeKHR VKFirstTriangle::GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes)
 {
-  // available present modes: Immediate, FIFO(Relax), Mailbox
+  // available present modes: Immediate, FIFO, FIFO(Relax), Mailbox
   // FIFO is always available
   // Mailbox is not, but more stable like triple-buffering (v-sync)
 
-  //if supports mailbox, use it
-  //for (VkPresentModeKHR &present_mode : present_modes)
-  //  if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
-  //  {
-  //    OutputDebugString("Present mode: Mailbox\n");
-  //    return present_mode;
-  //  }
+  // if supports mailbox, use it
+  for (VkPresentModeKHR& present_mode : present_modes)
+    if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+    {
+      OutputDebugString("Present mode: Mailbox\n");
+      return present_mode;
+    }
 
   //otherwise use fifo
   for (VkPresentModeKHR &present_mode : present_modes)
@@ -765,18 +765,18 @@ bool VKFirstTriangle::Initialize()
 #define CHECK(x) if (!x()) return false;
 
   CHECK(LoadVulkanLibrary)
-    CHECK(LoadExportedEntryPoints)
-    CHECK(LoadGlobalLevelEntryPoints)
-    CHECK(CreateInstance)
-    CHECK(LoadInstanceLevelEntryPoints)
-    CHECK(CreatePresentationSurface)
-    CHECK(CreateDevice)
-    CHECK(LoadDeviceLevelEntryPoints)
-    CHECK(GetDeviceQueue)
-    CHECK(CreateSemaphores)
+  CHECK(LoadExportedEntryPoints)
+  CHECK(LoadGlobalLevelEntryPoints)
+  CHECK(CreateInstance)
+  CHECK(LoadInstanceLevelEntryPoints)
+  CHECK(CreatePresentationSurface)
+  CHECK(CreateDevice)
+  CHECK(LoadDeviceLevelEntryPoints)
+  CHECK(GetDeviceQueue)
+  CHECK(CreateSemaphores)
 
-    CHECK(CreateSwapChain)
-    CHECK(CreateCommandBuffers)
+  CHECK(CreateSwapChain)
+  CHECK(CreateCommandBuffers)
 
 #undef CHECK
 

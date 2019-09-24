@@ -292,6 +292,7 @@ void VKSwapChain::Clear()
   if (m_device != VK_NULL_HANDLE)
     vkDeviceWaitIdle(m_device);
  
+  // originally destroying command pool will automatically destroy command buffers too
   if ((m_present_queue_cmd_buffers.size() > 0) && (m_present_queue_cmd_buffers[0] != VK_NULL_HANDLE))
   {
     vkFreeCommandBuffers(m_device, m_present_queue_cmd_pool, static_cast<uint32_t>(m_present_queue_cmd_buffers.size()), m_present_queue_cmd_buffers.data());
@@ -453,12 +454,12 @@ bool VKSwapChain::CreateCommandBuffers()
 
   m_present_queue_cmd_buffers.resize(image_count);
 
-  VkCommandBufferAllocateInfo cmd_buffer_allocate_info = { //peek VkCommandBufferAllocateInfo for more detail
+  VkCommandBufferAllocateInfo cmd_buffer_allocate_info = { // peek VkCommandBufferAllocateInfo for more detail
     VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, 
     nullptr,                                       
     m_present_queue_cmd_pool,
     VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-    image_count //buffercount
+    image_count // buffer count
   };
 
   if (vkAllocateCommandBuffers(m_device, &cmd_buffer_allocate_info, m_present_queue_cmd_buffers.data()) != VK_SUCCESS)
@@ -521,16 +522,16 @@ bool VKSwapChain::RecordCommandBuffers()
     };
 
     VkImageMemoryBarrier barrier_from_clear_to_present = {
-      VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType                        sType
-      nullptr,                                    // const void                            *pNext
-      VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags                          srcAccessMask
-      VK_ACCESS_MEMORY_READ_BIT,                  // VkAccessFlags                          dstAccessMask
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout                          oldLayout
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,            // VkImageLayout                          newLayout
-      VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               srcQueueFamilyIndex
-      VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               dstQueueFamilyIndex
-      swap_chain_images[i],                       // VkImage                                image
-      image_subresource_range                     // VkImageSubresourceRange                subresourceRange
+      VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     //  sType
+      nullptr,                                    // *pNext
+      VK_ACCESS_TRANSFER_WRITE_BIT,               //  srcAccessMask
+      VK_ACCESS_MEMORY_READ_BIT,                  //  dstAccessMask
+      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       //  oldLayout
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,            //  newLayout
+      VK_QUEUE_FAMILY_IGNORED,                    //  srcQueueFamilyIndex
+      VK_QUEUE_FAMILY_IGNORED,                    //  dstQueueFamilyIndex
+      swap_chain_images[i],                       //  image
+      image_subresource_range                     //  subresourceRange
     };
   
     vkBeginCommandBuffer(m_present_queue_cmd_buffers[i], &cmd_buffer_begin_info);
@@ -567,11 +568,11 @@ VkSurfaceFormatKHR VKSwapChain::GetSwapChainFormat(std::vector<VkSurfaceFormatKH
   // If the list contains only one entry with undefined format
   // it means that there are no preferred surface formats and any can be chosen
   if ((surface_formats.size() == 1) && (surface_formats[0].format == VK_FORMAT_UNDEFINED))
-    return{ VK_FORMAT_R8G8B8A8_UNORM, VK_COLORSPACE_SRGB_NONLINEAR_KHR };
+    return { VK_FORMAT_R8G8B8A8_UNORM, VK_COLORSPACE_SRGB_NONLINEAR_KHR };
 
   // Check if list contains most widely used R8 G8 B8 A8 format
   // with nonlinear color space
-  for (VkSurfaceFormatKHR &surface_format : surface_formats)
+  for (VkSurfaceFormatKHR& surface_format : surface_formats)
     if (surface_format.format == VK_FORMAT_R8G8B8A8_UNORM)
       return surface_format;
 
@@ -648,17 +649,17 @@ VkSurfaceTransformFlagBitsKHR VKSwapChain::GetSwapChainTransform(VkSurfaceCapabi
 
 VkPresentModeKHR VKSwapChain::GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes)
 {
-  // available present modes: Immediate, FIFO(Relax), Mailbox
+  // available present modes: Immediate, FIFO, FIFO(Relax), Mailbox
   // FIFO is always available
   // Mailbox is not, but more stable like triple-buffering (v-sync)
 
   //if supports mailbox, use it
-  //for (VkPresentModeKHR &present_mode : present_modes)
-  //  if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
-  //  {
-  //    OutputDebugString("Present mode: Mailbox\n");
-  //    return present_mode;
-  //  }
+  for (VkPresentModeKHR &present_mode : present_modes)
+    if (present_mode == VK_PRESENT_MODE_MAILBOX_KHR)
+    {
+      OutputDebugString("Present mode: Mailbox\n");
+      return present_mode;
+    }
 
   //otherwise use fifo
   for (VkPresentModeKHR &present_mode : present_modes)
@@ -730,7 +731,7 @@ void VKSwapChain::Update()
     nullptr,
     1, // waitSemaphoreCount
     &m_image_available_semaphore, //wait
-    &wait_dst_stage_mask,
+    &wait_dst_stage_mask, // describes on which stage semaphore wait will occur
     1, // commandBufferCount
     &m_present_queue_cmd_buffers[image_index],
     1, // signalSemaphoreCount
@@ -749,7 +750,7 @@ void VKSwapChain::Update()
     VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
     nullptr,
     1, // waitSemaphoreCount
-    &m_rendering_finished_semaphore,
+    &m_rendering_finished_semaphore, // wait
     1, // swapchainCount
     &m_swap_chain,
     &image_index, 
