@@ -10,25 +10,27 @@ private:
   struct ImageInfo
   {
     VkImage handle;
-    //VkImageView view;
+    VkImageView view;
     //VkSampler sampler;
     //VkDeviceMemory memory;
   };
 
-  VkPhysicalDevice m_physical_device;
-  VkSurfaceKHR  m_presentation_surface;
-  uint32_t m_graphics_queue_family_index;
-  uint32_t m_present_queue_family_index;
-  VkQueue m_graphics_queue;
-  VkQueue m_present_queue;
-  VkSemaphore m_image_available_semaphore;
-  VkSemaphore m_rendering_finished_semaphore;
-  VkSwapchainKHR m_swap_chain;
-  std::vector<ImageInfo> m_swap_chain_images;
-  VkSurfaceFormatKHR m_swap_chain_format;
-  std::vector<VkCommandBuffer> m_present_queue_cmd_buffers;
-  VkCommandPool m_present_queue_cmd_pool;
-  VkRenderPass m_render_pass;
+  VkPhysicalDevice              m_physical_device;
+  VkSurfaceKHR                  m_presentation_surface;
+  uint32_t                      m_graphics_queue_family_index;
+  uint32_t                      m_present_queue_family_index;
+  VkQueue                       m_graphics_queue;
+  VkQueue                       m_present_queue;
+  VkSemaphore                   m_image_available_semaphore;
+  VkSemaphore                   m_rendering_finished_semaphore;
+  VkSwapchainKHR                m_swap_chain;
+  std::vector<ImageInfo>        m_swap_chain_images;
+  VkFormat                      m_swap_chain_format;
+  VkExtent2D                    m_swap_chain_extent;
+  std::vector<VkCommandBuffer>  m_present_queue_cmd_buffers;
+  VkCommandPool                 m_present_queue_cmd_pool;
+  VkRenderPass                  m_render_pass;
+  std::vector<VkFramebuffer>    m_frame_buffers;
 
   virtual bool CreateInstance() override;
   bool CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions);
@@ -44,6 +46,7 @@ private:
   bool CreatePresentationSurface();
   bool CreateSemaphores();
   bool CreateSwapChain();
+  bool CreateSwapChainImageViews();
   bool CreateCommandBuffers();
   bool RecordCommandBuffers();
   bool CreateRenderPass();

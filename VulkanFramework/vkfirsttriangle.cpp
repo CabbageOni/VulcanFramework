@@ -386,7 +386,7 @@ bool VKFirstTriangle::CreateSwapChain()
   VkPresentModeKHR              desired_present_mode = GetSwapChainPresentMode(present_modes);
   VkExtent2D                    desired_extent = GetSwapChainExtent(surface_capabilities);
   uint32_t                      desired_number_of_images = GetSwapChainNumImages(surface_capabilities);
-                                m_swap_chain_format = GetSwapChainFormat(surface_formats);
+  VkSurfaceFormatKHR            desired_format = GetSwapChainFormat(surface_formats);
   VkSurfaceTransformFlagBitsKHR desired_transform = GetSwapChainTransform(surface_capabilities);
   VkSwapchainKHR                old_swap_chain = m_swap_chain;
 
@@ -405,8 +405,8 @@ bool VKFirstTriangle::CreateSwapChain()
     nullptr, 0,
     m_presentation_surface,
     desired_number_of_images,
-    m_swap_chain_format.format,
-    m_swap_chain_format.colorSpace,
+    desired_format.format,
+    desired_format.colorSpace,
     desired_extent,
     1,
     desired_usage,
@@ -429,6 +429,63 @@ bool VKFirstTriangle::CreateSwapChain()
   if (old_swap_chain != VK_NULL_HANDLE)
     vkDestroySwapchainKHR(m_device, old_swap_chain, nullptr);
   
+  m_swap_chain_format = desired_format.format;
+  m_swap_chain_extent = desired_extent;
+
+  uint32_t image_count = 0;
+  if ((vkGetSwapchainImagesKHR(m_device, m_swap_chain, &image_count, nullptr) != VK_SUCCESS) || (image_count == 0))
+  {
+    assert("Could not get swap chain images!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  std::vector<VkImage> images(image_count);
+  if (vkGetSwapchainImagesKHR(m_device, m_swap_chain, &image_count, images.data()) != VK_SUCCESS)
+  {
+    assert("Could not get swap chain images!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  m_swap_chain_images.resize(image_count);
+  for (size_t i = 0; i < m_swap_chain_images.size(); ++i)
+    m_swap_chain_images[i].handle = images[i];
+
+  return CreateSwapChainImageViews();
+}
+
+bool VKFirstTriangle::CreateSwapChainImageViews()
+{
+  for (size_t i = 0; i < m_swap_chain_images.size(); ++i)
+  {
+    VkImageViewCreateInfo image_view_create_info = {
+      VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType
+      nullptr,                                    // pNext
+      0,                                          // VkImageViewCreateFlags
+      m_swap_chain_images[i].handle,              // VkImage
+      VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType
+      m_swap_chain_format,                        // VkFormat
+      {                                           // VkComponentMapping             components
+        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             r
+        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             g
+        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             b
+        VK_COMPONENT_SWIZZLE_IDENTITY               // VkComponentSwizzle             a
+      },
+      {                                           // VkImageSubresourceRange        subresourceRange
+        VK_IMAGE_ASPECT_COLOR_BIT,                  // VkImageAspectFlags             aspectMask
+        0,                                          // uint32_t                       baseMipLevel
+        1,                                          // uint32_t                       levelCount
+        0,                                          // uint32_t                       baseArrayLayer
+        1                                           // uint32_t                       layerCount
+      }
+    };
+
+    if (vkCreateImageView(m_device, &image_view_create_info, nullptr, &m_swap_chain_images[i].view) != VK_SUCCESS)
+    {
+      assert("Could not create image view!", "Vulkan", Assert::Error);
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -556,10 +613,10 @@ bool VKFirstTriangle::CreateRenderPass()
   VkAttachmentDescription attachment_descriptions[1] = {
     {
       0,                                          // flags
-      m_swap_chain_format.format,                 // format
+      m_swap_chain_format,                        // format
       VK_SAMPLE_COUNT_1_BIT,                      // samples
-      VK_ATTACHMENT_LOAD_OP_CLEAR,                // loadOp = operation on load
-      VK_ATTACHMENT_STORE_OP_STORE,               // storeOp = operation after renderpass
+      VK_ATTACHMENT_LOAD_OP_CLEAR,                // loadOp = operation on load, before renderpass, includes depth too
+      VK_ATTACHMENT_STORE_OP_STORE,               // storeOp = operation after renderpass, includes depth too
       VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // stencilLoadOp
       VK_ATTACHMENT_STORE_OP_DONT_CARE,           // stencilStoreOp
       VK_IMAGE_LAYOUT_UNDEFINED,                  // initialLayout
@@ -577,7 +634,7 @@ bool VKFirstTriangle::CreateRenderPass()
   VkSubpassDescription subpass_descriptions[1] = {
     {
       0,                                          // flags
-      VK_PIPELINE_BIND_POINT_GRAPHICS,            // pipelineBindPoint
+      VK_PIPELINE_BIND_POINT_GRAPHICS,            // pipelineBindPoint, graphics or compute
       0,                                          // inputAttachmentCount
       nullptr,                                    // pInputAttachments
       1,                                          // colorAttachmentCount
@@ -598,7 +655,7 @@ bool VKFirstTriangle::CreateRenderPass()
     1,                                            // subpassCount
     subpass_descriptions,                         // pSubpasses
     0,                                            // dependencyCount
-    nullptr                                       // pDependencies
+    nullptr                                       // pDependencies, dependency between subpasses
   };
   
   if (vkCreateRenderPass(m_device, &render_pass_create_info, nullptr, &m_render_pass) != VK_SUCCESS)
@@ -613,26 +670,12 @@ bool VKFirstTriangle::CreateRenderPass()
 bool VKFirstTriangle::CreateFrameBuffers()
 {
   const std::vector<ImageInfo>& swap_chain_images = m_swap_chain_images;
-  //m_frame_buffers.resize(swap_chain_images.size());
+  m_frame_buffers.resize(swap_chain_images.size());
 
-  //for (size_t i = 0; i < swap_chain_images.size(); ++i) {
-  //  VkFramebufferCreateInfo framebuffer_create_info = {
-  //    VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // VkStructureType                sType
-  //    nullptr,                                    // const void                    *pNext
-  //    0,                                          // VkFramebufferCreateFlags       flags
-  //    Vulkan.RenderPass,                          // VkRenderPass                   renderPass
-  //    1,                                          // uint32_t                       attachmentCount
-  //    &swap_chain_images[i].View,                 // const VkImageView             *pAttachments
-  //    300,                                        // uint32_t                       width
-  //    300,                                        // uint32_t                       height
-  //    1                                           // uint32_t                       layers
-  //  };
-  //
-  //  if (vkCreateFramebuffer(GetDevice(), &framebuffer_create_info, nullptr, &Vulkan.Framebuffers[i]) != VK_SUCCESS) {
-  //    std::cout << "Could not create a framebuffer!" << std::endl;
-  //    return false;
-  //  }
-  //}
+  for(size_t i = 0; i < m_frame_buffers.size(); ++i)
+  {
+    // TODO: work here
+  }
 
   return true;
 }
@@ -777,6 +820,7 @@ bool VKFirstTriangle::Initialize()
 
   CHECK(CreateSwapChain)
   CHECK(CreateCommandBuffers)
+  CHECK(CreateFrameBuffers)
 
 #undef CHECK
 
@@ -878,6 +922,10 @@ void VKFirstTriangle::Terminate()
 
     if (m_swap_chain != VK_NULL_HANDLE)
       vkDestroySwapchainKHR(m_device, m_swap_chain, nullptr);
+
+    for (size_t i = 0; i < m_swap_chain_images.size(); ++i)
+      if (m_swap_chain_images[i].view != VK_NULL_HANDLE)
+        vkDestroyImageView(m_device, m_swap_chain_images[i].view, nullptr);
 
     vkDestroyDevice(m_device, nullptr);
   }
