@@ -762,8 +762,8 @@ void VKSwapChain::Update()
   {
   case VK_SUCCESS:
     break;
-  case VK_ERROR_OUT_OF_DATE_KHR:
   case VK_SUBOPTIMAL_KHR:
+  case VK_ERROR_OUT_OF_DATE_KHR:
     if (!OnWindowSizeChanged())
       engine.Quit();
     return;

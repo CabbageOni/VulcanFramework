@@ -51,6 +51,7 @@ private:
   bool RecordCommandBuffers();
   bool CreateRenderPass();
   bool CreateFrameBuffers();
+  bool CreatePipeline();
 
   uint32_t GetSwapChainNumImages(VkSurfaceCapabilitiesKHR &surface_capabilities);
   VkSurfaceFormatKHR GetSwapChainFormat(std::vector<VkSurfaceFormatKHR> &surface_formats);
@@ -58,6 +59,7 @@ private:
   VkImageUsageFlags GetSwapChainUsageFlags(VkSurfaceCapabilitiesKHR& surface_capabilities);
   VkSurfaceTransformFlagBitsKHR GetSwapChainTransform(VkSurfaceCapabilitiesKHR& surface_capabilities);
   VkPresentModeKHR GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes);
+  VkShaderModule CreateShaderModule(const char* shader_code);
 
   virtual bool Initialize() override;
   virtual void Update() override;

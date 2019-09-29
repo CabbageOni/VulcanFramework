@@ -78,8 +78,13 @@ LOAD_DEVICE_LEVEL(vkGetSwapchainImagesKHR)
 LOAD_DEVICE_LEVEL(vkAcquireNextImageKHR)
 LOAD_DEVICE_LEVEL(vkQueuePresentKHR)
 LOAD_DEVICE_LEVEL(vkCreateRenderPass)
+LOAD_DEVICE_LEVEL(vkDestroyRenderPass)
 LOAD_DEVICE_LEVEL(vkCreateImageView)
 LOAD_DEVICE_LEVEL(vkDestroyImageView)
+LOAD_DEVICE_LEVEL(vkCreateFramebuffer)
+LOAD_DEVICE_LEVEL(vkDestroyFramebuffer)
+LOAD_DEVICE_LEVEL(vkCreateShaderModule)
+LOAD_DEVICE_LEVEL(vkDestroyShaderModule)
 #endif
 
 #undef LOAD_DEVICE_LEVEL

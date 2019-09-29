@@ -277,14 +277,26 @@ bool VKFirstTriangle::OnWindowSizeChanged()
 {
   Clear();
 
-  if (!CreateRenderPass())
-    return false;
-
   if (!CreateSwapChain())
     return false;
 
-  if (!CreateCommandBuffers())
-    return false;
+  if (m_swap_chain != VK_NULL_HANDLE)
+  {
+    if (!CreateRenderPass())
+      return false;
+  
+    if (!CreateFrameBuffers())
+      return false;
+    
+    if (!CreatePipeline())
+      return false;
+    
+    if (!CreateCommandBuffers())
+      return false;
+    
+    if (!RecordCommandBuffers())
+      return false;
+  }
 
   return true;
 }
@@ -292,18 +304,37 @@ bool VKFirstTriangle::OnWindowSizeChanged()
 void VKFirstTriangle::Clear()
 {
   if (m_device != VK_NULL_HANDLE)
+  {
     vkDeviceWaitIdle(m_device);
 
-  if ((m_present_queue_cmd_buffers.size() > 0) && (m_present_queue_cmd_buffers[0] != VK_NULL_HANDLE))
-  {
-    vkFreeCommandBuffers(m_device, m_present_queue_cmd_pool, static_cast<uint32_t>(m_present_queue_cmd_buffers.size()), m_present_queue_cmd_buffers.data());
-    m_present_queue_cmd_buffers.clear();
-  }
+    if ((m_present_queue_cmd_buffers.size() > 0) && (m_present_queue_cmd_buffers[0] != VK_NULL_HANDLE))
+    {
+      vkFreeCommandBuffers(m_device, m_present_queue_cmd_pool, static_cast<uint32_t>(m_present_queue_cmd_buffers.size()), m_present_queue_cmd_buffers.data());
+      m_present_queue_cmd_buffers.clear();
+    }
 
-  if (m_present_queue_cmd_pool != VK_NULL_HANDLE)
-  {
-    vkDestroyCommandPool(m_device, m_present_queue_cmd_pool, nullptr);
-    m_present_queue_cmd_pool = VK_NULL_HANDLE;
+    if (m_present_queue_cmd_pool != VK_NULL_HANDLE)
+    {
+      vkDestroyCommandPool(m_device, m_present_queue_cmd_pool, nullptr);
+      m_present_queue_cmd_pool = VK_NULL_HANDLE;
+    }
+
+    /*
+    if (Vulkan.GraphicsPipeline != VK_NULL_HANDLE) {
+      vkDestroyPipeline(GetDevice(), Vulkan.GraphicsPipeline, nullptr);
+      Vulkan.GraphicsPipeline = VK_NULL_HANDLE;
+    }*/
+
+    if (m_render_pass != VK_NULL_HANDLE)
+    {
+      vkDestroyRenderPass(m_device, m_render_pass, nullptr);
+      m_render_pass = VK_NULL_HANDLE;
+    }
+
+    for (size_t i = 0; i < m_frame_buffers.size(); ++i)
+      if (m_frame_buffers[i] != VK_NULL_HANDLE)
+        vkDestroyFramebuffer(m_device, m_frame_buffers[i], nullptr);
+    m_frame_buffers.clear();
   }
 }
 
@@ -468,7 +499,7 @@ bool VKFirstTriangle::CreateSwapChainImageViews()
         VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             r
         VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             g
         VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             b
-        VK_COMPONENT_SWIZZLE_IDENTITY               // VkComponentSwizzle             a
+        VK_COMPONENT_SWIZZLE_IDENTITY               // VkComponentSwizzle             a, identity == using same value as above
       },
       {                                           // VkImageSubresourceRange        subresourceRange
         VK_IMAGE_ASPECT_COLOR_BIT,                  // VkImageAspectFlags             aspectMask
@@ -674,8 +705,85 @@ bool VKFirstTriangle::CreateFrameBuffers()
 
   for(size_t i = 0; i < m_frame_buffers.size(); ++i)
   {
-    // TODO: work here
+    VkFramebufferCreateInfo framebuffer_create_info = {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // VkStructureType
+        nullptr,                                    // pNext
+        0,                                          // VkFramebufferCreateFlags
+        m_render_pass,                              // VkRenderPass
+        1,                                          // attachmentCount, matched with render pass attachmentCount! (maybe subpass)
+        &swap_chain_images[i].view,                 // pAttachments
+        300,                                        // width
+        300,                                        // height
+        1                                           // layers
+    };
+
+    if (vkCreateFramebuffer(m_device, &framebuffer_create_info, nullptr, &m_frame_buffers[i]) != VK_SUCCESS)
+    {
+      assert("Could not create frame buffer!", "Vulkan", Assert::Error);
+      return false;
+    }
   }
+
+  return true;
+}
+
+bool VKFirstTriangle::CreatePipeline()
+{
+  // TODO: objectify shader module creation...
+  const char* vertex_shader_code = R"(
+  #version 450
+
+  out gl_PerVertex
+  {
+    vec4 gl_Position;
+  };
+
+  void main() {
+      vec2 pos[3] = vec2[3]( vec2(-0.7, 0.7), vec2(0.7, 0.7), vec2(0.0, -0.7) );
+      gl_Position = vec4( pos[gl_VertexIndex], 0.0, 1.0 );
+  }
+  )";
+  const char* fragment_shader_code = R"(
+  #version 450
+
+  layout(location = 0) out vec4 out_Color;
+
+  void main() {
+    out_Color = vec4( 0.0, 0.4, 1.0, 1.0 );
+  }
+  )";
+
+  VkShaderModule vertex_shader_module = CreateShaderModule(vertex_shader_code);
+  VkShaderModule fragment_shader_module = CreateShaderModule(fragment_shader_code);
+
+  if (!vertex_shader_module || !fragment_shader_module)
+    return false;
+
+  std::vector<VkPipelineShaderStageCreateInfo> shader_stage_create_infos = {
+    // Vertex shader
+    {
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,        // VkStructureType
+      nullptr,                                                    // pNext
+      0,                                                          // VkPipelineShaderStageCreateFlags
+      VK_SHADER_STAGE_VERTEX_BIT,                                 // VkShaderStageFlagBits
+      vertex_shader_module,                                       // VkShaderModule
+      "main",                                                     // pName
+      nullptr                                                     // const VkSpecializationInfo
+    },
+    // Fragment shader
+    {
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,        // VkStructureType
+      nullptr,                                                    // pNext
+      0,                                                          // VkPipelineShaderStageCreateFlags
+      VK_SHADER_STAGE_FRAGMENT_BIT,                               // VkShaderStageFlagBits
+      fragment_shader_module,                                     // VkShaderModule
+      "main",                                                     // pName
+      nullptr                                                     // const VkSpecializationInfo
+    }
+  };
+
+  vkDestroyShaderModule(m_device, vertex_shader_module, nullptr);
+  vkDestroyShaderModule(m_device, fragment_shader_module, nullptr);
 
   return true;
 }
@@ -803,6 +911,29 @@ VkPresentModeKHR VKFirstTriangle::GetSwapChainPresentMode(std::vector<VkPresentM
   return static_cast<VkPresentModeKHR>(-1);
 }
 
+VkShaderModule VKFirstTriangle::CreateShaderModule(const char* shader_code)
+{
+  if (shader_code == nullptr)
+    return nullptr;
+
+  VkShaderModuleCreateInfo shader_module_create_info = {
+    VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,    // VkStructureType
+    nullptr,                                        // pNext
+    0,                                              // VkShaderModuleCreateFlags
+    strlen(shader_code),                            // codeSize
+    reinterpret_cast<const uint32_t*>(shader_code)  // pCode
+  };
+
+  VkShaderModule shader_module;
+  if (vkCreateShaderModule(m_device, &shader_module_create_info, nullptr, &shader_module) != VK_SUCCESS)
+  {
+    assert("Could not create shader module!", "Vulkan", Assert::Error);
+    return nullptr;
+  }
+
+  return shader_module;
+}
+
 bool VKFirstTriangle::Initialize()
 {
 #define CHECK(x) if (!x()) return false;
@@ -818,9 +949,7 @@ bool VKFirstTriangle::Initialize()
   CHECK(GetDeviceQueue)
   CHECK(CreateSemaphores)
 
-  CHECK(CreateSwapChain)
-  CHECK(CreateCommandBuffers)
-  CHECK(CreateFrameBuffers)
+  CHECK(OnWindowSizeChanged)
 
 #undef CHECK
 
@@ -915,17 +1044,27 @@ void VKFirstTriangle::Terminate()
     vkDeviceWaitIdle(m_device);
 
     if (m_image_available_semaphore != VK_NULL_HANDLE)
+    {
       vkDestroySemaphore(m_device, m_image_available_semaphore, nullptr);
+      m_image_available_semaphore = VK_NULL_HANDLE;
+    }
 
     if (m_rendering_finished_semaphore != VK_NULL_HANDLE)
+    {
       vkDestroySemaphore(m_device, m_rendering_finished_semaphore, nullptr);
+      m_rendering_finished_semaphore = VK_NULL_HANDLE;
+    }
 
     if (m_swap_chain != VK_NULL_HANDLE)
+    {
       vkDestroySwapchainKHR(m_device, m_swap_chain, nullptr);
+      m_swap_chain = VK_NULL_HANDLE;
+    }
 
     for (size_t i = 0; i < m_swap_chain_images.size(); ++i)
       if (m_swap_chain_images[i].view != VK_NULL_HANDLE)
         vkDestroyImageView(m_device, m_swap_chain_images[i].view, nullptr);
+    m_swap_chain_images.clear();
 
     vkDestroyDevice(m_device, nullptr);
   }
