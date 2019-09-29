@@ -229,11 +229,11 @@ bool VKFirstTriangle::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_de
 
     if ((queue_family_properties[i].queueCount > 0) && (queue_family_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT))
     {
-      // Select first queue that supports graphics
+      // Select first queue family that supports graphics
       if (graphics_queue_family_index == UINT32_MAX)
         graphics_queue_family_index = i;
 
-      // If there is queue that supports both graphics and present - prefer it
+      // If there is queue family that supports both graphics and present - prefer it
       if (queue_present_support[i])
       {
         selected_graphics_queue_family_index = i;
@@ -308,23 +308,23 @@ void VKFirstTriangle::Clear()
   {
     vkDeviceWaitIdle(m_device);
 
-    if ((m_present_queue_cmd_buffers.size() > 0) && (m_present_queue_cmd_buffers[0] != VK_NULL_HANDLE))
+    if ((m_present_queue_command_buffers.size() > 0) && (m_present_queue_command_buffers[0] != VK_NULL_HANDLE))
     {
-      vkFreeCommandBuffers(m_device, m_present_queue_cmd_pool, static_cast<uint32_t>(m_present_queue_cmd_buffers.size()), m_present_queue_cmd_buffers.data());
-      m_present_queue_cmd_buffers.clear();
+      vkFreeCommandBuffers(m_device, m_present_queue_command_pool, static_cast<uint32_t>(m_present_queue_command_buffers.size()), m_present_queue_command_buffers.data());
+      m_present_queue_command_buffers.clear();
     }
 
-    if (m_present_queue_cmd_pool != VK_NULL_HANDLE)
+    if (m_present_queue_command_pool != VK_NULL_HANDLE)
     {
-      vkDestroyCommandPool(m_device, m_present_queue_cmd_pool, nullptr);
-      m_present_queue_cmd_pool = VK_NULL_HANDLE;
+      vkDestroyCommandPool(m_device, m_present_queue_command_pool, nullptr);
+      m_present_queue_command_pool = VK_NULL_HANDLE;
     }
 
-    /*
-    if (Vulkan.GraphicsPipeline != VK_NULL_HANDLE) {
-      vkDestroyPipeline(GetDevice(), Vulkan.GraphicsPipeline, nullptr);
-      Vulkan.GraphicsPipeline = VK_NULL_HANDLE;
-    }*/
+    if (m_pipeline != VK_NULL_HANDLE)
+    {
+      vkDestroyPipeline(m_device, m_pipeline, nullptr);
+      m_pipeline = VK_NULL_HANDLE;
+    }
 
     if (m_render_pass != VK_NULL_HANDLE)
     {
@@ -485,296 +485,6 @@ bool VKFirstTriangle::CreateSwapChain()
   return CreateSwapChainImageViews();
 }
 
-bool VKFirstTriangle::CreateSwapChainImageViews()
-{
-  for (size_t i = 0; i < m_swap_chain_images.size(); ++i)
-  {
-    VkImageViewCreateInfo image_view_create_info = {
-      VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType
-      nullptr,                                    // pNext
-      0,                                          // VkImageViewCreateFlags
-      m_swap_chain_images[i].handle,              // VkImage
-      VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType
-      m_swap_chain_format,                        // VkFormat
-      {                                           // VkComponentMapping             components
-        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             r
-        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             g
-        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             b
-        VK_COMPONENT_SWIZZLE_IDENTITY               // VkComponentSwizzle             a, identity == using same value as above
-      },
-      {                                           // VkImageSubresourceRange        subresourceRange
-        VK_IMAGE_ASPECT_COLOR_BIT,                  // VkImageAspectFlags             aspectMask
-        0,                                          // uint32_t                       baseMipLevel
-        1,                                          // uint32_t                       levelCount
-        0,                                          // uint32_t                       baseArrayLayer
-        1                                           // uint32_t                       layerCount
-      }
-    };
-
-    if (vkCreateImageView(m_device, &image_view_create_info, nullptr, &m_swap_chain_images[i].view) != VK_SUCCESS)
-    {
-      assert("Could not create image view!", "Vulkan", Assert::Error);
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool VKFirstTriangle::CreateCommandBuffers()
-{
-  VkCommandPoolCreateInfo cmd_pool_create_info = { // peek VkCommandPoolCreateInfo for more detail
-    VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-    nullptr, 0,
-    m_present_queue_family_index
-  };
-
-  if (vkCreateCommandPool(m_device, &cmd_pool_create_info, nullptr, &m_present_queue_cmd_pool) != VK_SUCCESS)
-  {
-    assert("Could not create a command pool!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  uint32_t image_count = 0;
-  if ((vkGetSwapchainImagesKHR(m_device, m_swap_chain, &image_count, nullptr) != VK_SUCCESS) || (image_count == 0))
-  {
-    assert("Could not get the number of swap chain images!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  m_present_queue_cmd_buffers.resize(image_count);
-
-  VkCommandBufferAllocateInfo cmd_buffer_allocate_info = { //peek VkCommandBufferAllocateInfo for more detail
-    VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-    nullptr,
-    m_present_queue_cmd_pool,
-    VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-    image_count //buffercount
-  };
-
-  if (vkAllocateCommandBuffers(m_device, &cmd_buffer_allocate_info, m_present_queue_cmd_buffers.data()) != VK_SUCCESS)
-  {
-    assert("Could not allocate command buffers!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  if (!RecordCommandBuffers())
-  {
-    assert("Could not record command buffers!", "Vulkan", Assert::Error);
-    return false;
-  }
-  return true;
-}
-
-bool VKFirstTriangle::RecordCommandBuffers()
-{
-  uint32_t image_count = static_cast<uint32_t>(m_present_queue_cmd_buffers.size());
-
-  std::vector<VkImage> swap_chain_images(image_count);
-  if (vkGetSwapchainImagesKHR(m_device, m_swap_chain, &image_count, swap_chain_images.data()) != VK_SUCCESS)
-  {
-    assert("Could not get swap chain images!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  VkCommandBufferBeginInfo cmd_buffer_begin_info = {
-    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-    nullptr,
-    VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
-    nullptr
-  };
-
-  VkClearColorValue clear_color = {
-    { 1.0f, 0.8f, 0.4f, 0.0f }
-  };
-
-  VkImageSubresourceRange image_subresource_range = {
-    VK_IMAGE_ASPECT_COLOR_BIT,
-    0,
-    1,
-    0,
-    1
-  };
-
-  for (uint32_t i = 0; i < image_count; ++i)
-  {
-    VkImageMemoryBarrier barrier_from_present_to_clear = {
-      VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     //  sType
-      nullptr,                                    // *pNext
-      VK_ACCESS_MEMORY_READ_BIT,                  //  srcAccessMask
-      VK_ACCESS_TRANSFER_WRITE_BIT,               //  dstAccessMask
-      VK_IMAGE_LAYOUT_UNDEFINED,                  //  oldLayout
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       //  newLayout
-      VK_QUEUE_FAMILY_IGNORED,                    //  srcQueueFamilyIndex
-      VK_QUEUE_FAMILY_IGNORED,                    //  dstQueueFamilyIndex
-      swap_chain_images[i],                       //  image
-      image_subresource_range                     //  subresourceRange
-    };
-
-    VkImageMemoryBarrier barrier_from_clear_to_present = {
-      VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType                        sType
-      nullptr,                                    // const void                            *pNext
-      VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags                          srcAccessMask
-      VK_ACCESS_MEMORY_READ_BIT,                  // VkAccessFlags                          dstAccessMask
-      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout                          oldLayout
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,            // VkImageLayout                          newLayout
-      VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               srcQueueFamilyIndex
-      VK_QUEUE_FAMILY_IGNORED,                    // uint32_t                               dstQueueFamilyIndex
-      swap_chain_images[i],                       // VkImage                                image
-      image_subresource_range                     // VkImageSubresourceRange                subresourceRange
-    };
-
-    vkBeginCommandBuffer(m_present_queue_cmd_buffers[i], &cmd_buffer_begin_info);
-    vkCmdPipelineBarrier(m_present_queue_cmd_buffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_present_to_clear);
-
-    vkCmdClearColorImage(m_present_queue_cmd_buffers[i], swap_chain_images[i], VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &image_subresource_range);
-    vkCmdPipelineBarrier(m_present_queue_cmd_buffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_clear_to_present);
-
-    if (vkEndCommandBuffer(m_present_queue_cmd_buffers[i]) != VK_SUCCESS)
-    {
-      assert("Could not record command buffers!", "Vulkan", Assert::Error);
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool VKFirstTriangle::CreateRenderPass()
-{
-  VkAttachmentDescription attachment_descriptions[1] = {
-    {
-      0,                                          // flags
-      m_swap_chain_format,                        // format
-      VK_SAMPLE_COUNT_1_BIT,                      // samples
-      VK_ATTACHMENT_LOAD_OP_CLEAR,                // loadOp = operation on load, before renderpass, includes depth too
-      VK_ATTACHMENT_STORE_OP_STORE,               // storeOp = operation after renderpass, includes depth too
-      VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // stencilLoadOp
-      VK_ATTACHMENT_STORE_OP_DONT_CARE,           // stencilStoreOp
-      VK_IMAGE_LAYOUT_UNDEFINED,                  // initialLayout
-      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR             // finalLayout
-    }
-  };
-
-  VkAttachmentReference color_attachment_references[1] = {
-    {
-      0,                                          // attachment index?
-      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL    // layout
-    }
-  };
-  
-  VkSubpassDescription subpass_descriptions[1] = {
-    {
-      0,                                          // flags
-      VK_PIPELINE_BIND_POINT_GRAPHICS,            // pipelineBindPoint, graphics or compute
-      0,                                          // inputAttachmentCount
-      nullptr,                                    // pInputAttachments
-      1,                                          // colorAttachmentCount
-      color_attachment_references,                // pColorAttachments
-      nullptr,                                    // pResolveAttachments
-      nullptr,                                    // pDepthStencilAttachment
-      0,                                          // preserveAttachmentCount
-      nullptr                                     // pPreserveAttachments
-    }
-  };
-  
-  VkRenderPassCreateInfo render_pass_create_info = {
-    VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,    // sType
-    nullptr,                                      // pNext
-    0,                                            // flags
-    1,                                            // attachmentCount
-    attachment_descriptions,                      // pAttachments
-    1,                                            // subpassCount
-    subpass_descriptions,                         // pSubpasses
-    0,                                            // dependencyCount
-    nullptr                                       // pDependencies, dependency between subpasses
-  };
-  
-  if (vkCreateRenderPass(m_device, &render_pass_create_info, nullptr, &m_render_pass) != VK_SUCCESS)
-  {
-    assert("Could not create render pass!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  return true;
-}
-
-bool VKFirstTriangle::CreateFrameBuffers()
-{
-  const std::vector<ImageInfo>& swap_chain_images = m_swap_chain_images;
-  m_frame_buffers.resize(swap_chain_images.size());
-
-  for(size_t i = 0; i < m_frame_buffers.size(); ++i)
-  {
-    VkFramebufferCreateInfo framebuffer_create_info = {
-        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // VkStructureType
-        nullptr,                                    // pNext
-        0,                                          // VkFramebufferCreateFlags
-        m_render_pass,                              // VkRenderPass
-        1,                                          // attachmentCount, matched with render pass attachmentCount! (maybe subpass)
-        &swap_chain_images[i].view,                 // pAttachments
-        300,                                        // width
-        300,                                        // height
-        1                                           // layers
-    };
-
-    if (vkCreateFramebuffer(m_device, &framebuffer_create_info, nullptr, &m_frame_buffers[i]) != VK_SUCCESS)
-    {
-      assert("Could not create frame buffer!", "Vulkan", Assert::Error);
-      return false;
-    }
-  }
-
-  return true;
-}
-
-bool VKFirstTriangle::CreatePipeline()
-{
-  VkShaderModule vertex_shader_module = CreateShaderModule("shaders/vert.spv");
-  VkShaderModule fragment_shader_module = CreateShaderModule("shaders/frag.spv");
-
-  if (!vertex_shader_module || !fragment_shader_module)
-    return false;
-
-  std::vector<VkPipelineShaderStageCreateInfo> shader_stage_create_infos = {
-    // Vertex shader
-    {
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,        // VkStructureType
-      nullptr,                                                    // pNext
-      0,                                                          // VkPipelineShaderStageCreateFlags
-      VK_SHADER_STAGE_VERTEX_BIT,                                 // VkShaderStageFlagBits
-      vertex_shader_module,                                       // VkShaderModule
-      "main",                                                     // pName
-      nullptr                                                     // const VkSpecializationInfo
-    },
-    // Fragment shader
-    {
-      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,        // VkStructureType
-      nullptr,                                                    // pNext
-      0,                                                          // VkPipelineShaderStageCreateFlags
-      VK_SHADER_STAGE_FRAGMENT_BIT,                               // VkShaderStageFlagBits
-      fragment_shader_module,                                     // VkShaderModule
-      "main",                                                     // pName
-      nullptr                                                     // const VkSpecializationInfo
-    }
-  };
-
-  VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,    // VkStructureType
-      nullptr,                                                      // *pNext
-      0,                                                            // VkPipelineVertexInputStateCreateFlags
-      0,                                                            // vertexBindingDescriptionCount
-      nullptr,                                                      // const VkVertexInputBindingDescription*
-      0,                                                            // vertexAttributeDescriptionCount
-      nullptr                                                       // const VkVertexInputAttributeDescription*
-  };
-
-  vkDestroyShaderModule(m_device, vertex_shader_module, nullptr);
-  vkDestroyShaderModule(m_device, fragment_shader_module, nullptr);
-
-  return true;
-}
-
 uint32_t VKFirstTriangle::GetSwapChainNumImages(VkSurfaceCapabilitiesKHR& surface_capabilities)
 {
   //Image ~= FrameBuffer
@@ -898,6 +608,299 @@ VkPresentModeKHR VKFirstTriangle::GetSwapChainPresentMode(std::vector<VkPresentM
   return static_cast<VkPresentModeKHR>(-1);
 }
 
+bool VKFirstTriangle::CreateSwapChainImageViews()
+{
+  for (size_t i = 0; i < m_swap_chain_images.size(); ++i)
+  {
+    VkImageViewCreateInfo image_view_create_info = {
+      VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType
+      nullptr,                                    // pNext
+      0,                                          // VkImageViewCreateFlags
+      m_swap_chain_images[i].handle,              // VkImage
+      VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType
+      m_swap_chain_format,                        // VkFormat
+      {                                           // VkComponentMapping             components
+        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             r
+        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             g
+        VK_COMPONENT_SWIZZLE_IDENTITY,              // VkComponentSwizzle             b
+        VK_COMPONENT_SWIZZLE_IDENTITY               // VkComponentSwizzle             a, identity == using same value as above
+      },
+      {                                           // VkImageSubresourceRange        subresourceRange
+        VK_IMAGE_ASPECT_COLOR_BIT,                  // VkImageAspectFlags             aspectMask
+        0,                                          // uint32_t                       baseMipLevel
+        1,                                          // uint32_t                       levelCount
+        0,                                          // uint32_t                       baseArrayLayer
+        1                                           // uint32_t                       layerCount
+      }
+    };
+
+    if (vkCreateImageView(m_device, &image_view_create_info, nullptr, &m_swap_chain_images[i].view) != VK_SUCCESS)
+    {
+      assert("Could not create image view!", "Vulkan", Assert::Error);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool VKFirstTriangle::CreateRenderPass()
+{
+  VkAttachmentDescription attachment_descriptions[1] = {
+    {
+      0,                                          // flags
+      m_swap_chain_format,                        // format
+      VK_SAMPLE_COUNT_1_BIT,                      // samples
+      VK_ATTACHMENT_LOAD_OP_CLEAR,                // loadOp = operation on load, before renderpass, includes depth too
+      VK_ATTACHMENT_STORE_OP_STORE,               // storeOp = operation after renderpass, includes depth too
+      VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // stencilLoadOp
+      VK_ATTACHMENT_STORE_OP_DONT_CARE,           // stencilStoreOp
+      VK_IMAGE_LAYOUT_UNDEFINED,                  // initialLayout
+      VK_IMAGE_LAYOUT_PRESENT_SRC_KHR             // finalLayout
+    }
+  };
+
+  VkAttachmentReference color_attachment_references[1] = {
+    {
+      0,                                          // attachment index?
+      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL    // layout
+    }
+  };
+  
+  VkSubpassDescription subpass_descriptions[1] = {
+    {
+      0,                                          // flags
+      VK_PIPELINE_BIND_POINT_GRAPHICS,            // pipelineBindPoint, graphics or compute
+      0,                                          // inputAttachmentCount
+      nullptr,                                    // pInputAttachments
+      1,                                          // colorAttachmentCount
+      color_attachment_references,                // pColorAttachments
+      nullptr,                                    // pResolveAttachments
+      nullptr,                                    // pDepthStencilAttachment
+      0,                                          // preserveAttachmentCount
+      nullptr                                     // pPreserveAttachments
+    }
+  };
+  
+  VkRenderPassCreateInfo render_pass_create_info = {
+    VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,    // sType
+    nullptr,                                      // pNext
+    0,                                            // flags
+    1,                                            // attachmentCount
+    attachment_descriptions,                      // pAttachments
+    1,                                            // subpassCount
+    subpass_descriptions,                         // pSubpasses
+    0,                                            // dependencyCount
+    nullptr                                       // pDependencies, dependency between subpasses
+  };
+  
+  if (vkCreateRenderPass(m_device, &render_pass_create_info, nullptr, &m_render_pass) != VK_SUCCESS)
+  {
+    assert("Could not create render pass!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  return true;
+}
+
+bool VKFirstTriangle::CreateFrameBuffers()
+{
+  const std::vector<ImageInfo>& swap_chain_images = m_swap_chain_images;
+  m_frame_buffers.resize(swap_chain_images.size());
+
+  for(size_t i = 0; i < m_frame_buffers.size(); ++i)
+  {
+    VkFramebufferCreateInfo framebuffer_create_info = {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // VkStructureType
+        nullptr,                                    // pNext
+        0,                                          // VkFramebufferCreateFlags
+        m_render_pass,                              // VkRenderPass
+        1,                                          // attachmentCount, matched with render pass attachmentCount! (maybe subpass)
+        &swap_chain_images[i].view,                 // pAttachments
+        300,                                        // width
+        300,                                        // height
+        1                                           // layers
+    };
+
+    if (vkCreateFramebuffer(m_device, &framebuffer_create_info, nullptr, &m_frame_buffers[i]) != VK_SUCCESS)
+    {
+      assert("Could not create frame buffer!", "Vulkan", Assert::Error);
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool VKFirstTriangle::CreatePipeline()
+{
+  VkShaderModule vertex_shader_module = CreateShaderModule("shaders/vert.spv");
+  VkShaderModule fragment_shader_module = CreateShaderModule("shaders/frag.spv");
+
+  if (!vertex_shader_module || !fragment_shader_module)
+    return false;
+
+  std::vector<VkPipelineShaderStageCreateInfo> shader_stage_create_infos = {
+    // Vertex shader
+    {
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType
+      nullptr,                                             // pNext
+      0,                                                   // VkPipelineShaderStageCreateFlags
+      VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits
+      vertex_shader_module,                                // VkShaderModule
+      "main",                                              // pName
+      nullptr                                              // const VkSpecializationInfo
+    },
+    // Fragment shader
+    {
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType
+      nullptr,                                             // pNext
+      0,                                                   // VkPipelineShaderStageCreateFlags
+      VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits
+      fragment_shader_module,                              // VkShaderModule
+      "main",                                              // pName
+      nullptr                                              // const VkSpecializationInfo
+    }
+  };
+
+  VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType
+      nullptr,                                                   // *pNext
+      0,                                                         // VkPipelineVertexInputStateCreateFlags
+      0,                                                         // vertexBindingDescriptionCount
+      nullptr,                                                   // const VkVertexInputBindingDescription*
+      0,                                                         // vertexAttributeDescriptionCount
+      nullptr                                                    // const VkVertexInputAttributeDescription*
+  };
+
+  VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {
+  VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,  // VkStructureType
+  nullptr,                                                      // pNext
+  0,                                                            // VkPipelineInputAssemblyStateCreateFlags
+  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,                          // VkPrimitiveTopology
+  VK_FALSE                                                      // primitiveRestartEnable
+  };
+
+  VkViewport viewport = {
+  0.0f,   // x
+  0.0f,   // y
+  300.0f, // width
+  300.0f, // height
+  0.0f,   // minDepth, depth range is [0, 1)
+  1.0f    // maxDepth
+  };
+
+  VkRect2D scissor = {
+    {      // VkOffset2D
+      0,     // x
+      0      // y
+    },     
+    {      // VkExtent2D
+      300,   // width
+      300    // height
+    }
+  };
+
+  VkPipelineViewportStateCreateInfo viewport_state_create_info = {
+    VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType
+    nullptr,                                               // pNext
+    0,                                                     // VkPipelineViewportStateCreateFlags
+    1,                                                     // viewportCount
+    &viewport,                                             // pViewports
+    1,                                                     // scissorCount
+    &scissor                                               // pScissors
+  };
+
+  VkPipelineRasterizationStateCreateInfo rasterization_state_create_info = {
+  VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType
+  nullptr,                                                    // pNext
+  0,                                                          // VkPipelineRasterizationStateCreateFlags
+  VK_FALSE,                                                   // depthClampEnable
+  VK_FALSE,                                                   // rasterizerDiscardEnable
+  VK_POLYGON_MODE_FILL,                                       // VkPolygonMode
+  VK_CULL_MODE_BACK_BIT,                                      // VkCullModeFlags
+  VK_FRONT_FACE_COUNTER_CLOCKWISE,                            // VkFrontFace
+  VK_FALSE,                                                   // depthBiasEnable
+  0.0f,                                                       // depthBiasConstantFactor
+  0.0f,                                                       // depthBiasClamp
+  0.0f,                                                       // depthBiasSlopeFactor
+  1.0f                                                        // lineWidth
+  };
+
+  VkPipelineMultisampleStateCreateInfo multisample_state_create_info = {
+  VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType
+  nullptr,                                                  // pNext
+  0,                                                        // VkPipelineMultisampleStateCreateFlags
+  VK_SAMPLE_COUNT_1_BIT,                                    // VkSampleCountFlagBits
+  VK_FALSE,                                                 // sampleShadingEnable
+  1.0f,                                                     // minSampleShading
+  nullptr,                                                  // pSampleMask
+  VK_FALSE,                                                 // alphaToCoverageEnable
+  VK_FALSE                                                  // alphaToOneEnable
+  };
+
+  VkPipelineColorBlendAttachmentState color_blend_attachment_state = {
+  VK_FALSE,                                             // blendEnable
+  VK_BLEND_FACTOR_ONE,                                  // srcColorBlendFactor
+  VK_BLEND_FACTOR_ZERO,                                 // dstColorBlendFactor
+  VK_BLEND_OP_ADD,                                      // colorBlendOp
+  VK_BLEND_FACTOR_ONE,                                  // srcAlphaBlendFactor
+  VK_BLEND_FACTOR_ZERO,                                 // dstAlphaBlendFactor
+  VK_BLEND_OP_ADD,                                      // alphaBlendOp
+  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | // colorWriteMask
+  VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+  };
+
+  VkPipelineColorBlendStateCreateInfo color_blend_state_create_info = {
+    VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType
+    nullptr,                                                  // pNext
+    0,                                                        // VkPipelineColorBlendStateCreateFlags
+    VK_FALSE,                                                 // logicOpEnable
+    VK_LOGIC_OP_COPY,                                         // VkLogicOp
+    1,                                                        // attachmentCount
+    &color_blend_attachment_state,                            // pAttachments
+    { 0.0f, 0.0f, 0.0f, 0.0f }                                // blendConstants[4]
+  };
+
+  VkPipelineLayout pipeline_layout = CreatePipelineLayout();
+  if (!pipeline_layout)
+    return false;
+
+  VkGraphicsPipelineCreateInfo pipeline_create_info = {
+    VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,         // VkStructureType
+    nullptr,                                                 // pNext
+    0,                                                       // VkPipelineCreateFlags
+    static_cast<uint32_t>(shader_stage_create_infos.size()), // stageCount
+    shader_stage_create_infos.data(),                        // pStages
+    &vertex_input_state_create_info,                         // pVertexInputState
+    &input_assembly_state_create_info,                       // pInputAssemblyState
+    nullptr,                                                 // pTessellationState
+    &viewport_state_create_info,                             // pViewportState
+    &rasterization_state_create_info,                        // pRasterizationState
+    &multisample_state_create_info,                          // pMultisampleState
+    nullptr,                                                 // pDepthStencilState
+    &color_blend_state_create_info,                          // pColorBlendState
+    nullptr,                                                 // pDynamicState
+    pipeline_layout,                                         // VkPipelineLayout
+    m_render_pass,                                           // VkRenderPass
+    0,                                                       // subpass
+    VK_NULL_HANDLE,                                          // basePipelineHandle, well... pipeline can 'Inherit' pipelines...
+    -1                                                       // basePipelineIndex
+  };
+
+  if (vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &m_pipeline) != VK_SUCCESS)
+  {
+    assert("Could not create graphics pipeline!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  vkDestroyShaderModule(m_device, vertex_shader_module, nullptr);
+  vkDestroyShaderModule(m_device, fragment_shader_module, nullptr);
+  vkDestroyPipelineLayout(m_device, pipeline_layout, nullptr);
+
+  return true;
+}
+
 VkShaderModule VKFirstTriangle::CreateShaderModule(const char* file_name)
 {
   if (file_name == nullptr)
@@ -926,6 +929,170 @@ VkShaderModule VKFirstTriangle::CreateShaderModule(const char* file_name)
   return shader_module;
 }
 
+VkPipelineLayout VKFirstTriangle::CreatePipelineLayout()
+{
+  VkPipelineLayoutCreateInfo layout_create_info = {
+  VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType
+  nullptr,                                       // pNext
+  0,                                             // VkPipelineLayoutCreateFlags
+  0,                                             // setLayoutCount
+  nullptr,                                       // pSetLayouts
+  0,                                             // pushConstantRangeCount
+  nullptr                                        // pPushConstantRanges
+  };
+
+  VkPipelineLayout pipeline_layout;
+  if (vkCreatePipelineLayout(m_device, &layout_create_info, nullptr, &pipeline_layout) != VK_SUCCESS)
+  {
+    assert("Could not create pipeline layout!", "Vulkan", Assert::Error);
+    return nullptr;
+  }
+
+  return pipeline_layout;
+}
+
+bool VKFirstTriangle::CreateCommandBuffers()
+{
+  if (!CreateCommandPool(m_graphics_queue_family_index, &m_graphics_queue_command_pool))
+    return false;
+
+  uint32_t image_count = static_cast<uint32_t>(m_swap_chain_images.size());
+  m_graphics_queue_command_buffers.resize(image_count, VK_NULL_HANDLE);
+
+  if (!AllocateCommandBuffers(m_graphics_queue_command_pool, image_count, m_graphics_queue_command_buffers.data()))
+    return false;
+  return true;
+}
+
+bool VKFirstTriangle::CreateCommandPool(uint32_t queue_family_index, VkCommandPool* pool)
+{
+  VkCommandPoolCreateInfo cmd_pool_create_info = {
+    VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO, // VkStructureType
+    nullptr,                                    // pNext
+    0,                                          // VkCommandPoolCreateFlags flags
+    queue_family_index                          // queueFamilyIndex
+  };
+
+  if (vkCreateCommandPool(m_device, &cmd_pool_create_info, nullptr, pool) != VK_SUCCESS)
+  {
+    assert("Could not create a command pool!", "Vulkan", Assert::Error);
+    return false;
+  }
+  return true;
+}
+
+bool VKFirstTriangle::AllocateCommandBuffers(VkCommandPool pool, uint32_t count, VkCommandBuffer* command_buffers)
+{
+  VkCommandBufferAllocateInfo command_buffer_allocate_info = {
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType
+    nullptr,                                        // pNext
+    pool,                                           // VkCommandPool
+    VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel
+    count                                           // bufferCount
+  };
+
+  if (vkAllocateCommandBuffers(m_device, &command_buffer_allocate_info, command_buffers) != VK_SUCCESS)
+  {
+    assert("Could not allocate command buffers!", "Vulkan", Assert::Error);
+    return false;
+  }
+  return true;
+}
+
+bool VKFirstTriangle::RecordCommandBuffers()
+{
+  VkCommandBufferBeginInfo graphics_command_buffer_begin_info = {
+  VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,  // VkStructureType
+  nullptr,                                      // pNext
+  VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // VkCommandBufferUsageFlags
+  nullptr                                       // pInheritanceInfo
+  };
+
+  VkImageSubresourceRange image_subresource_range = {
+    VK_IMAGE_ASPECT_COLOR_BIT, // aspectMask
+    0,                         // baseMipLevel
+    1,                         // levelCount
+    0,                         // baseArrayLayer
+    1                          // layerCount
+  };
+
+  VkClearValue clear_value = {{ 1.0f, 0.8f, 0.4f, 0.0f }};
+  
+  for (size_t i = 0; i < m_graphics_queue_command_buffers.size(); ++i)
+  {
+    vkBeginCommandBuffer(m_graphics_queue_command_buffers[i], &graphics_command_buffer_begin_info);
+
+    // move image between queues, if queue is different
+    if (m_present_queue != m_graphics_queue)
+    {
+      VkImageMemoryBarrier barrier_from_present_to_draw = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType
+        nullptr,                                // pNext
+        VK_ACCESS_MEMORY_READ_BIT,              // srcAccessMask
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,              // oldLayout
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // newLayout
+        m_present_queue_family_index,           // srcQueueFamilyIndex
+        m_graphics_queue_family_index,          // dstQueueFamilyIndex
+        m_swap_chain_images[i].handle,          // image
+        image_subresource_range                 // VkImageSubresourceRange
+      };
+      vkCmdPipelineBarrier(m_graphics_queue_command_buffers[i], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_present_to_draw);
+    }
+
+    VkRenderPassBeginInfo render_pass_begin_info = {
+      VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType
+      nullptr,                                  // pNext
+      m_render_pass,                            // VkRenderPass
+      m_frame_buffers[i],                       // VkFramebuffer
+      {                                         // renderArea
+        {                                       // VkOffset2D
+          0,                                      // x
+          0                                       // y
+        },
+        {                                       // VkExtent2D
+          300,                                    // width
+          300,                                    // height
+        }
+      },
+      1,                                        // clearValueCount
+      &clear_value                              // pClearValues
+    };
+
+    vkCmdBeginRenderPass(m_graphics_queue_command_buffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(m_graphics_queue_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+    vkCmdDraw(m_graphics_queue_command_buffers[i], 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(m_graphics_queue_command_buffers[i]);
+
+    if (m_present_queue != m_graphics_queue)
+    {
+      VkImageMemoryBarrier barrier_from_draw_to_present = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // VkStructureType
+        nullptr,                                      // pNext
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,         // srcAccessMask
+        VK_ACCESS_MEMORY_READ_BIT,                    // dstAccessMask
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,              // oldLayout
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,              // newLayout
+        m_graphics_queue_family_index,                // srcQueueFamilyIndex
+        m_present_queue_family_index,                 // dstQueueFamilyIndex
+        m_swap_chain_images[i].handle,                // VkImage
+        image_subresource_range                       // VkImageSubresourceRange
+      };
+      vkCmdPipelineBarrier(m_graphics_queue_command_buffers[i], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_draw_to_present);
+    }
+
+    if (vkEndCommandBuffer(m_graphics_queue_command_buffers[i]) != VK_SUCCESS)
+    {
+      assert("Could not record command buffer!", "Vulkan", Assert::Error);
+      return false;
+    }
+  }
+  return true;
+}
+
 bool VKFirstTriangle::Initialize()
 {
 #define CHECK(x) if (!x()) return false;
@@ -950,6 +1117,8 @@ bool VKFirstTriangle::Initialize()
 
 void VKFirstTriangle::Update()
 {
+  return; // TODO: fix update
+
   uint32_t image_index;
 
   // acquiring next image to draw
@@ -985,7 +1154,7 @@ void VKFirstTriangle::Update()
     &m_image_available_semaphore, //wait
     &wait_dst_stage_mask,
     1, // commandBufferCount
-    &m_present_queue_cmd_buffers[image_index],
+    &m_present_queue_command_buffers[image_index],
     1, // signalSemaphoreCount
     &m_rendering_finished_semaphore //signal
   };

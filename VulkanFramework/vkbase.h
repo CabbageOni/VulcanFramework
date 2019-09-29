@@ -10,8 +10,8 @@ private:
 protected:
   HMODULE m_vulkan_library;
   VkInstance m_instance;
-  VkDevice m_device;
   VkPhysicalDevice m_physical_device;
+  VkDevice m_device;
 
   virtual bool LoadVulkanLibrary() final;
   virtual bool LoadExportedEntryPoints() final;

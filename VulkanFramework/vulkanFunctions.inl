@@ -85,6 +85,14 @@ LOAD_DEVICE_LEVEL(vkCreateFramebuffer)
 LOAD_DEVICE_LEVEL(vkDestroyFramebuffer)
 LOAD_DEVICE_LEVEL(vkCreateShaderModule)
 LOAD_DEVICE_LEVEL(vkDestroyShaderModule)
+LOAD_DEVICE_LEVEL(vkCreatePipelineLayout)
+LOAD_DEVICE_LEVEL(vkDestroyPipelineLayout)
+LOAD_DEVICE_LEVEL(vkCreateGraphicsPipelines)
+LOAD_DEVICE_LEVEL(vkDestroyPipeline)
+LOAD_DEVICE_LEVEL(vkCmdBeginRenderPass)
+LOAD_DEVICE_LEVEL(vkCmdBindPipeline)
+LOAD_DEVICE_LEVEL(vkCmdDraw)
+LOAD_DEVICE_LEVEL(vkCmdEndRenderPass)
 #endif
 
 #undef LOAD_DEVICE_LEVEL
