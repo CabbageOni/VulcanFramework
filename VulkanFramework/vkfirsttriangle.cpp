@@ -5,6 +5,7 @@
 #include "resources\vulkan\vulkan.h"
 #include "system.h"
 #include "assert.h"
+#include "fileio.h"
 
 #include "vkfirsttriangle.h"
 
@@ -729,32 +730,8 @@ bool VKFirstTriangle::CreateFrameBuffers()
 
 bool VKFirstTriangle::CreatePipeline()
 {
-  // TODO: objectify shader module creation...
-  const char* vertex_shader_code = R"(
-  #version 450
-
-  out gl_PerVertex
-  {
-    vec4 gl_Position;
-  };
-
-  void main() {
-      vec2 pos[3] = vec2[3]( vec2(-0.7, 0.7), vec2(0.7, 0.7), vec2(0.0, -0.7) );
-      gl_Position = vec4( pos[gl_VertexIndex], 0.0, 1.0 );
-  }
-  )";
-  const char* fragment_shader_code = R"(
-  #version 450
-
-  layout(location = 0) out vec4 out_Color;
-
-  void main() {
-    out_Color = vec4( 0.0, 0.4, 1.0, 1.0 );
-  }
-  )";
-
-  VkShaderModule vertex_shader_module = CreateShaderModule(vertex_shader_code);
-  VkShaderModule fragment_shader_module = CreateShaderModule(fragment_shader_code);
+  VkShaderModule vertex_shader_module = CreateShaderModule("shaders/vert.spv");
+  VkShaderModule fragment_shader_module = CreateShaderModule("shaders/frag.spv");
 
   if (!vertex_shader_module || !fragment_shader_module)
     return false;
@@ -780,6 +757,16 @@ bool VKFirstTriangle::CreatePipeline()
       "main",                                                     // pName
       nullptr                                                     // const VkSpecializationInfo
     }
+  };
+
+  VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,    // VkStructureType
+      nullptr,                                                      // *pNext
+      0,                                                            // VkPipelineVertexInputStateCreateFlags
+      0,                                                            // vertexBindingDescriptionCount
+      nullptr,                                                      // const VkVertexInputBindingDescription*
+      0,                                                            // vertexAttributeDescriptionCount
+      nullptr                                                       // const VkVertexInputAttributeDescription*
   };
 
   vkDestroyShaderModule(m_device, vertex_shader_module, nullptr);
@@ -911,17 +898,22 @@ VkPresentModeKHR VKFirstTriangle::GetSwapChainPresentMode(std::vector<VkPresentM
   return static_cast<VkPresentModeKHR>(-1);
 }
 
-VkShaderModule VKFirstTriangle::CreateShaderModule(const char* shader_code)
+VkShaderModule VKFirstTriangle::CreateShaderModule(const char* file_name)
 {
-  if (shader_code == nullptr)
+  if (file_name == nullptr)
+    return nullptr;
+
+  std::vector<char>&& code = read_binary_file(file_name);
+
+  if (code.empty())
     return nullptr;
 
   VkShaderModuleCreateInfo shader_module_create_info = {
     VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,    // VkStructureType
     nullptr,                                        // pNext
     0,                                              // VkShaderModuleCreateFlags
-    strlen(shader_code),                            // codeSize
-    reinterpret_cast<const uint32_t*>(shader_code)  // pCode
+    code.size(),                                    // codeSize
+    reinterpret_cast<const uint32_t*>(code.data())  // pCode
   };
 
   VkShaderModule shader_module;

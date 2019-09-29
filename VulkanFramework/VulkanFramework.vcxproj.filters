@@ -139,6 +139,9 @@
     <ClInclude Include="vkfirsttriangle.h">
       <Filter>소스 파일\Vulkan\FirstTriangle</Filter>
     </ClInclude>
+    <ClInclude Include="fileio.h">
+      <Filter>소스 파일\System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="vulkanFunctions.inl">

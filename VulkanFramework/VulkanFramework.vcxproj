@@ -132,6 +132,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="assert.h" />
+    <ClInclude Include="fileio.h" />
     <ClInclude Include="vkbase.h" />
     <ClInclude Include="resources\vulkan\vk_icd.h" />
     <ClInclude Include="resources\vulkan\vk_layer.h" />
