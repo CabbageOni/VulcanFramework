@@ -95,6 +95,7 @@ bool Initialize()
   _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF); //memory leak check
 #endif
 
+  if (!vulkan.BaseInitialize()) return false;
   if (!vulkan.Initialize()) return false;
 
   return true;
@@ -118,6 +119,7 @@ void End()
 void Terminate()
 {
   vulkan.Terminate();
+  vulkan.BaseTerminate();
 }
 
 int CALLBACK WinMain(HINSTANCE h_instance, HINSTANCE, LPSTR, int)

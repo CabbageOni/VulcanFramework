@@ -11,11 +11,8 @@ private:
   {
     VkImage handle;
     VkImageView view;
-    //VkSampler sampler;
-    //VkDeviceMemory memory;
   };
 
-  VkSurfaceKHR                  m_presentation_surface;
   uint32_t                      m_present_queue_family_index;
   uint32_t                      m_graphics_queue_family_index;
   VkQueue                       m_present_queue;
@@ -33,18 +30,15 @@ private:
   VkSemaphore                   m_image_available_semaphore;
   VkSemaphore                   m_rendering_finished_semaphore;
 
-  virtual bool CreateInstance() override;
-  bool CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions);
   virtual bool CreateDevice() override;
   bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
     uint32_t& selected_graphics_queue_family_index,
     uint32_t &selected_present_queue_family_index);
-  bool GetDeviceQueue() override;
+  bool GetDeviceQueue();
   bool OnWindowSizeChanged();
   void Clear();
 
   //extensions required
-  bool CreatePresentationSurface();
   bool CreateSemaphores();
   bool CreateSwapChain();
   uint32_t GetSwapChainNumImages(VkSurfaceCapabilitiesKHR &surface_capabilities);
@@ -69,7 +63,6 @@ private:
   virtual void Terminate() override;
 
 public:
-
   friend bool Initialize();
   friend void Update();
   friend void Terminate();

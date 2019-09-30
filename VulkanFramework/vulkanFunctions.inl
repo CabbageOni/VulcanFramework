@@ -33,14 +33,13 @@ LOAD_INSTANCE_LEVEL(vkCreateDevice)
 LOAD_INSTANCE_LEVEL(vkGetDeviceProcAddr)
 LOAD_INSTANCE_LEVEL(vkEnumerateDeviceExtensionProperties)
 
-#if VK_CURRENT_MODE == VK_SWAPCHAIN || VK_CURRENT_MODE == VK_FIRST_TRIANGLE
+// load surface related (presenting)
 LOAD_INSTANCE_LEVEL(vkCreateWin32SurfaceKHR)
 LOAD_INSTANCE_LEVEL(vkDestroySurfaceKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceSupportKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfaceFormatsKHR)
 LOAD_INSTANCE_LEVEL(vkGetPhysicalDeviceSurfacePresentModesKHR)
-#endif
 
 #undef LOAD_INSTANCE_LEVEL
 
@@ -93,6 +92,7 @@ LOAD_DEVICE_LEVEL(vkCmdBeginRenderPass)
 LOAD_DEVICE_LEVEL(vkCmdBindPipeline)
 LOAD_DEVICE_LEVEL(vkCmdDraw)
 LOAD_DEVICE_LEVEL(vkCmdEndRenderPass)
+#elif VK_CURRENT_MODE == VK_VERTEX_ATTRIBUTES
 #endif
 
 #undef LOAD_DEVICE_LEVEL

@@ -7,6 +7,4 @@
 #include "assert.h"
 #include "system.h"
 
-//current tutorial: https://software.intel.com/en-us/articles/api-without-secrets-introduction-to-vulkan-part-3
-
 VK_CURRENT_MODE_CLASS_NAME vulkan;

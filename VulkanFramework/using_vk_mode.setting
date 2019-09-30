@@ -2,9 +2,10 @@
 #define VK_BASE 0
 #define VK_SWAPCHAIN 1
 #define VK_FIRST_TRIANGLE 2
+#define VK_VERTEX_ATTRIBUTES 3
 
 //currently using mode
-#define VK_CURRENT_MODE VK_FIRST_TRIANGLE
+#define VK_CURRENT_MODE VK_VERTEX_ATTRIBUTES
 
 #if VK_CURRENT_MODE == VK_BASE
 #define VK_CURRENT_MODE_CLASS_NAME VKBase
@@ -12,6 +13,8 @@
 #define VK_CURRENT_MODE_CLASS_NAME VKSwapChain
 #elif VK_CURRENT_MODE == VK_FIRST_TRIANGLE
 #define VK_CURRENT_MODE_CLASS_NAME VKFirstTriangle
+#elif VK_CURRENT_MODE == VK_VERTEX_ATTRIBUTES
+#define VK_CURRENT_MODE_CLASS_NAME VKVertexAttributes
 #else
 #error Current Vulkan Mode invalid!
 #endif

@@ -49,6 +49,35 @@ bool VKBase::LoadGlobalLevelEntryPoints()
 
 bool VKBase::CreateInstance()
 {
+  uint32_t extensions_count = 0;
+  if ((vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, nullptr) != VK_SUCCESS) || (extensions_count == 0))
+  {
+    assert("Error occurred during instance extensions enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+  OutputDebugString(("number of extensions: " + std::to_string(extensions_count) + "\n").c_str());
+
+  std::vector<VkExtensionProperties> available_extensions(extensions_count);
+  if (vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, available_extensions.data()) != VK_SUCCESS)
+  {
+    assert("Error occurred during instance extensions enumeration!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  std::vector<const char*> extensions =
+  {
+    VK_KHR_SURFACE_EXTENSION_NAME, //displaying window extension
+    VK_KHR_WIN32_SURFACE_EXTENSION_NAME, //exclusive for Windows OS
+  };
+
+  //for each extensions search for specific extension
+  for (size_t i = 0; i < extensions.size(); ++i)
+    if (!CheckExtensionAvailability(extensions[i], available_extensions))
+    {
+      assert(("Could not find instance extension named \"" + std::string(extensions[i]) + "\"!").c_str(), "Vulkan", Assert::Error);
+      return false;
+    }
+
   VkApplicationInfo application_info = { //peek VkApplicationInfo for more details
     VK_STRUCTURE_TYPE_APPLICATION_INFO,
     nullptr,
@@ -64,8 +93,8 @@ bool VKBase::CreateInstance()
     nullptr, 0,
     &application_info,
     0, nullptr,
-    0, //enabledExtensionCount
-    nullptr //enabledExtensionNames
+    static_cast<uint32_t>(extensions.size()), //enabledExtensionCount
+    &extensions[0] //enabledExtensionNames
   };
 
   if (vkCreateInstance(&instance_create_info, nullptr, &m_instance) != VK_SUCCESS)
@@ -75,6 +104,14 @@ bool VKBase::CreateInstance()
   }
 
   return true;
+}
+
+bool VKBase::CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions)
+{
+  for (size_t i = 0; i < available_extensions.size(); ++i)
+    if (strcmp(available_extensions[i].extensionName, extension_name) == 0)
+      return true;
+  return false;
 }
 
 bool VKBase::LoadInstanceLevelEntryPoints()
@@ -88,6 +125,22 @@ bool VKBase::LoadInstanceLevelEntryPoints()
 #undef LOAD_INSTANCE_LEVEL
 
   return true;
+}
+
+bool VKBase::CreatePresentationSurface()
+{
+  VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
+    VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+    nullptr, 0,
+    winAPI.InstanceHandle(), // HINSTANCE hinstance
+    winAPI.WindowHandle() // HWND hwnd
+  };
+
+  if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
+    return true;
+
+  assert("Could not create presentation surface!", "Vulkan", Assert::Error);
+  return false;
 }
 
 bool VKBase::CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device, uint32_t &queue_family_index)
@@ -197,43 +250,39 @@ return false;                                                                   
   return true;
 }
 
-bool VKBase::GetDeviceQueue()
-{
-  //no queues were created in base!
-
-  return true;
-}
-
-bool VKBase::Initialize()
+bool VKBase::BaseInitialize()
 {
 #define CHECK(x) if (!x()) return false;
 
-    CHECK(LoadVulkanLibrary)
-    CHECK(LoadExportedEntryPoints)
-    CHECK(LoadGlobalLevelEntryPoints)
-    CHECK(CreateInstance)
-    CHECK(LoadInstanceLevelEntryPoints)
-    CHECK(CreateDevice)
-    CHECK(LoadDeviceLevelEntryPoints)
+  CHECK(LoadVulkanLibrary)
+  CHECK(LoadExportedEntryPoints)
+  CHECK(LoadGlobalLevelEntryPoints)
+  CHECK(CreateInstance)
+  CHECK(LoadInstanceLevelEntryPoints)
+  CHECK(CreatePresentationSurface)
+  CHECK(CreateDevice)
+  CHECK(LoadDeviceLevelEntryPoints)
 
 #undef CHECK
-
-    return true;
+  return true;
 }
 
-void VKBase::Update()
-{
-  //Do nothing here
-}
+bool VKBase::Initialize() { return true; }
 
-void VKBase::Terminate()
+void VKBase::Update() {}
+
+void VKBase::Terminate() {}
+
+void VKBase::BaseTerminate()
 {
-  //warning! all releasing should be in order!
   if (m_device != VK_NULL_HANDLE)
   {
     vkDeviceWaitIdle(m_device);
     vkDestroyDevice(m_device, nullptr);
   }
+
+  if (m_presentation_surface != VK_NULL_HANDLE)
+    vkDestroySurfaceKHR(m_instance, m_presentation_surface, nullptr);
 
   if (m_instance != VK_NULL_HANDLE)
     vkDestroyInstance(m_instance, nullptr);

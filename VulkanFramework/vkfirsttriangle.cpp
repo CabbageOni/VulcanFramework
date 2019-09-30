@@ -11,73 +11,6 @@
 
 #if VK_CURRENT_MODE == VK_FIRST_TRIANGLE
 
-bool VKFirstTriangle::CreateInstance()
-{
-  uint32_t extensions_count = 0;
-  if ((vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, nullptr) != VK_SUCCESS) || (extensions_count == 0))
-  {
-    assert("Error occurred during instance extensions enumeration!", "Vulkan", Assert::Error);
-    return false;
-  }
-  OutputDebugString(("number of extensions: " + std::to_string(extensions_count) + "\n").c_str());
-
-  std::vector<VkExtensionProperties> available_extensions(extensions_count);
-  if (vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, available_extensions.data()) != VK_SUCCESS)
-  {
-    assert("Error occurred during instance extensions enumeration!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  std::vector<const char*> extensions =
-  {
-    VK_KHR_SURFACE_EXTENSION_NAME, //displaying window extension
-    VK_KHR_WIN32_SURFACE_EXTENSION_NAME, //exclusive for Windows OS
-  };
-
-  //for each extensions search for specific extension
-  for (size_t i = 0; i < extensions.size(); ++i)
-    if (!CheckExtensionAvailability(extensions[i], available_extensions))
-    {
-      assert(("Could not find instance extension named \"" + std::string(extensions[i]) + "\"!").c_str(), "Vulkan", Assert::Error);
-      return false;
-    }
-
-  VkApplicationInfo application_info = { //peek VkApplicationInfo for more details
-    VK_STRUCTURE_TYPE_APPLICATION_INFO,
-    nullptr,
-    "Vulkan Framework",
-    VK_MAKE_VERSION(1, 0, 0),
-    "Vulkan Framework",
-    VK_MAKE_VERSION(1, 0, 0),
-    VK_API_VERSION_1_0
-  };
-
-  VkInstanceCreateInfo instance_create_info = { //peek VkInstanceCreateInfo for more details
-    VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-    nullptr, 0,
-    &application_info,
-    0, nullptr,
-    static_cast<uint32_t>(extensions.size()), //enabledExtensionCount
-    &extensions[0] //enabledExtensionNames
-  };
-
-  if (vkCreateInstance(&instance_create_info, nullptr, &m_instance) != VK_SUCCESS)
-  {
-    assert("Could not create Vulkan instance!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  return true;
-}
-
-bool VKFirstTriangle::CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions)
-{
-  for (size_t i = 0; i < available_extensions.size(); ++i)
-    if (strcmp(available_extensions[i].extensionName, extension_name) == 0)
-      return true;
-  return false;
-}
-
 bool VKFirstTriangle::CreateDevice()
 {
   uint32_t num_devices = 0;
@@ -337,22 +270,6 @@ void VKFirstTriangle::Clear()
         vkDestroyFramebuffer(m_device, m_frame_buffers[i], nullptr);
     m_frame_buffers.clear();
   }
-}
-
-bool VKFirstTriangle::CreatePresentationSurface()
-{
-  VkWin32SurfaceCreateInfoKHR surface_create_info = { //peek VkWin32SurfaceCreateInfoKHR for more info
-    VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-    nullptr, 0,
-    winAPI.InstanceHandle(), // HINSTANCE hinstance
-    winAPI.WindowHandle() // HWND hwnd
-  };
-
-  if (vkCreateWin32SurfaceKHR(m_instance, &surface_create_info, nullptr, &m_presentation_surface) == VK_SUCCESS)
-    return true;
-
-  assert("Could not create presentation surface!", "Vulkan", Assert::Error);
-  return false;
 }
 
 bool VKFirstTriangle::CreateSemaphores()
@@ -717,8 +634,8 @@ bool VKFirstTriangle::CreateFrameBuffers()
         m_render_pass,                             // VkRenderPass
         1,                                         // attachmentCount, matched with render pass attachmentCount! (maybe subpass)
         &swap_chain_images[i].view,                // pAttachments
-        winAPI.Width(),                            // width
-        winAPI.Height(),                           // height
+        static_cast<uint32_t>(winAPI.Width()),     // width
+        static_cast<uint32_t>(winAPI.Height()),    // height
         1                                          // layers
     };
 
@@ -782,22 +699,22 @@ bool VKFirstTriangle::CreatePipeline()
   };
 
   VkViewport viewport = {
-  0.0f,            // x
-  0.0f,            // y
-  winAPI.Width(),  // width
-  winAPI.Height(), // height
-  0.0f,            // minDepth, depth range is [0, 1)
-  1.0f             // maxDepth
+  0.0f,                                // x
+  0.0f,                                // y
+  static_cast<float>(winAPI.Width()),  // width
+  static_cast<float>(winAPI.Height()), // height
+  0.0f,                                // minDepth, depth range is [0, 1)
+  1.0f                                 // maxDepth
   };
 
   VkRect2D scissor = {
-    {                 // VkOffset2D
-      0,                // x
-      0                 // y
-    },                
-    {                 // VkExtent2D
-      winAPI.Width(),   // width
-      winAPI.Height()   // height
+    {                                        // VkOffset2D
+      0,                                       // x
+      0                                        // y
+    },                                       
+    {                                        // VkExtent2D
+      static_cast<uint32_t>(winAPI.Width()),   // width
+      static_cast<uint32_t>(winAPI.Height())   // height
     }
   };
 
@@ -1041,22 +958,22 @@ bool VKFirstTriangle::RecordCommandBuffers()
     }
 
     VkRenderPassBeginInfo render_pass_begin_info = {
-      VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType
-      nullptr,                                  // pNext
-      m_render_pass,                            // VkRenderPass
-      m_frame_buffers[i],                       // VkFramebuffer
-      {                                         // renderArea
-        {                                       // VkOffset2D
-          0,                                      // x
-          0                                       // y
-        },
-        {                                       // VkExtent2D
-          winAPI.Width(),                         // width
-          winAPI.Height()                         // height
-        }
-      },
-      1,                                        // clearValueCount
-      &clear_value                              // pClearValues
+      VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,  // VkStructureType
+      nullptr,                                   // pNext
+      m_render_pass,                             // VkRenderPass
+      m_frame_buffers[i],                        // VkFramebuffer
+      {                                          // renderArea
+        {                                        // VkOffset2D
+          0,                                       // x
+          0                                        // y
+        },                                       
+        {                                        // VkExtent2D
+          static_cast<uint32_t>(winAPI.Width()),   // width
+          static_cast<uint32_t>(winAPI.Height())   // height
+        }                                        
+      },                                         
+      1,                                         // clearValueCount
+      &clear_value                               // pClearValues
     };
 
     vkCmdBeginRenderPass(m_graphics_queue_command_buffers[i], &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
@@ -1097,22 +1014,13 @@ bool VKFirstTriangle::Initialize()
 {
 #define CHECK(x) if (!x()) return false;
 
-  CHECK(LoadVulkanLibrary)
-  CHECK(LoadExportedEntryPoints)
-  CHECK(LoadGlobalLevelEntryPoints)
-  CHECK(CreateInstance)
-  CHECK(LoadInstanceLevelEntryPoints)
-  CHECK(CreatePresentationSurface)
-  CHECK(CreateDevice)
-  CHECK(LoadDeviceLevelEntryPoints)
   CHECK(GetDeviceQueue)
   CHECK(CreateSemaphores)
-
   CHECK(OnWindowSizeChanged)
 
 #undef CHECK
 
-    return true;
+  return true;
 }
 
 void VKFirstTriangle::Update()
@@ -1224,18 +1132,7 @@ void VKFirstTriangle::Terminate()
       if (m_swap_chain_images[i].view != VK_NULL_HANDLE)
         vkDestroyImageView(m_device, m_swap_chain_images[i].view, nullptr);
     m_swap_chain_images.clear();
-
-    vkDestroyDevice(m_device, nullptr);
   }
-
-  if (m_presentation_surface != VK_NULL_HANDLE)
-    vkDestroySurfaceKHR(m_instance, m_presentation_surface, nullptr);
-
-  if (m_instance != VK_NULL_HANDLE)
-    vkDestroyInstance(m_instance, nullptr);
-
-  if (m_vulkan_library)
-    FreeLibrary(m_vulkan_library);
 }
 
 #endif

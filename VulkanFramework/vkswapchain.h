@@ -7,31 +7,26 @@
 class VKSwapChain : public VKBase
 {
 private:
-  VkPhysicalDevice m_physical_device;
-  VkSurfaceKHR  m_presentation_surface;
-  uint32_t m_graphics_queue_family_index;
-  uint32_t m_present_queue_family_index;
-  VkQueue m_graphics_queue;
-  VkQueue m_present_queue;
-  VkSemaphore m_image_available_semaphore;
-  VkSemaphore m_rendering_finished_semaphore;
-  VkSwapchainKHR m_swap_chain;
-  VkSurfaceFormatKHR m_swap_chain_format;
+  uint32_t                     m_graphics_queue_family_index;
+  uint32_t                     m_present_queue_family_index;
+  VkQueue                      m_graphics_queue;
+  VkQueue                      m_present_queue;
+  VkSemaphore                  m_image_available_semaphore;
+  VkSemaphore                  m_rendering_finished_semaphore;
+  VkSwapchainKHR               m_swap_chain;
+  VkSurfaceFormatKHR           m_swap_chain_format;
   std::vector<VkCommandBuffer> m_present_queue_cmd_buffers;
-  VkCommandPool m_present_queue_cmd_pool;
+  VkCommandPool                m_present_queue_cmd_pool;
 
-  virtual bool CreateInstance() override;
-  bool CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions);
   virtual bool CreateDevice() override;
   bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
                                     uint32_t& selected_graphics_queue_family_index,
                                     uint32_t &selected_present_queue_family_index);
-  bool GetDeviceQueue() override;
+  bool GetDeviceQueue();
   bool OnWindowSizeChanged();
   void Clear();
 
   //extensions required
-  bool CreatePresentationSurface();
   bool CreateSemaphores();
   bool CreateSwapChain();
   bool CreateCommandBuffers();

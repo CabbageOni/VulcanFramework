@@ -6,4 +6,6 @@
 #include "vkswapchain.h"
 #elif VK_CURRENT_MODE == VK_FIRST_TRIANGLE
 #include "vkfirsttriangle.h"
+#elif VK_CURRENT_MODE == VK_VERTEX_ATTRIBUTES
+#include "vkvertexattributes.h"
 #endif

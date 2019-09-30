@@ -36,6 +36,9 @@
     <Filter Include="소스 파일\Vulkan\FirstTriangle">
       <UniqueIdentifier>{94ebca88-95c5-4f8a-b102-7e6dc88e9a3c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Vulkan\VertexAttributes">
+      <UniqueIdentifier>{e23e8d9b-6f21-4d3e-9a1e-d2ecbed46c1a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="windows.cpp">
@@ -61,6 +64,9 @@
     </ClCompile>
     <ClCompile Include="vkfirsttriangle.cpp">
       <Filter>소스 파일\Vulkan\FirstTriangle</Filter>
+    </ClCompile>
+    <ClCompile Include="vkvertexattributes.cpp">
+      <Filter>소스 파일\Vulkan\VertexAttributes</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -141,6 +147,9 @@
     </ClInclude>
     <ClInclude Include="fileio.h">
       <Filter>소스 파일\System</Filter>
+    </ClInclude>
+    <ClInclude Include="vkvertexattributes.h">
+      <Filter>소스 파일\Vulkan\VertexAttributes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

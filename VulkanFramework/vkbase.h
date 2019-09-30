@@ -5,26 +5,29 @@
 class VKBase
 {
 private:
+  virtual bool BaseInitialize() final;
+  virtual bool LoadVulkanLibrary() final;
+  virtual bool LoadExportedEntryPoints() final;
+  virtual bool LoadGlobalLevelEntryPoints() final;
+  virtual bool CreateInstance();
+  virtual bool LoadInstanceLevelEntryPoints() final;
+  virtual bool CreatePresentationSurface() final;
+  virtual bool CreateDevice();
   bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device, uint32_t &queue_family_index);
+  virtual bool LoadDeviceLevelEntryPoints() final;
+  virtual bool Initialize();
+  virtual void Update();
+  virtual void Terminate();
+  virtual void BaseTerminate() final;
 
 protected:
   HMODULE m_vulkan_library;
   VkInstance m_instance;
   VkPhysicalDevice m_physical_device;
   VkDevice m_device;
+  VkSurfaceKHR m_presentation_surface;
 
-  virtual bool LoadVulkanLibrary() final;
-  virtual bool LoadExportedEntryPoints() final;
-  virtual bool LoadGlobalLevelEntryPoints() final;
-  virtual bool CreateInstance();
-  virtual bool LoadInstanceLevelEntryPoints() final;
-  virtual bool CreateDevice();
-  virtual bool LoadDeviceLevelEntryPoints() final;
-  virtual bool GetDeviceQueue();
-
-  virtual bool Initialize();
-  virtual void Update();
-  virtual void Terminate();
+  virtual bool CheckExtensionAvailability(const char* extension_name, const std::vector<VkExtensionProperties>& available_extensions) final;
 
   //Vulkan functions
 #define LOAD_EXPORTED(func) PFN_##func func;
