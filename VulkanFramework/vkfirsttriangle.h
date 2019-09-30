@@ -22,8 +22,6 @@ private:
   VkQueue                       m_graphics_queue;
   VkCommandPool                 m_graphics_queue_command_pool;
   std::vector<VkCommandBuffer>  m_graphics_queue_command_buffers;
-  VkCommandPool                 m_present_queue_command_pool;
-  std::vector<VkCommandBuffer>  m_present_queue_command_buffers;
   VkSwapchainKHR                m_swap_chain;
   VkFormat                      m_swap_chain_format;
   VkExtent2D                    m_swap_chain_extent;

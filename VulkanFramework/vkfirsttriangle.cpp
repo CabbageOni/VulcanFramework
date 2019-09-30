@@ -308,16 +308,16 @@ void VKFirstTriangle::Clear()
   {
     vkDeviceWaitIdle(m_device);
 
-    if ((m_present_queue_command_buffers.size() > 0) && (m_present_queue_command_buffers[0] != VK_NULL_HANDLE))
+    if ((m_graphics_queue_command_buffers.size() > 0) && (m_graphics_queue_command_buffers[0] != VK_NULL_HANDLE))
     {
-      vkFreeCommandBuffers(m_device, m_present_queue_command_pool, static_cast<uint32_t>(m_present_queue_command_buffers.size()), m_present_queue_command_buffers.data());
-      m_present_queue_command_buffers.clear();
+      vkFreeCommandBuffers(m_device, m_graphics_queue_command_pool, static_cast<uint32_t>(m_graphics_queue_command_buffers.size()), m_graphics_queue_command_buffers.data());
+      m_graphics_queue_command_buffers.clear();
     }
 
-    if (m_present_queue_command_pool != VK_NULL_HANDLE)
+    if (m_graphics_queue_command_pool != VK_NULL_HANDLE)
     {
-      vkDestroyCommandPool(m_device, m_present_queue_command_pool, nullptr);
-      m_present_queue_command_pool = VK_NULL_HANDLE;
+      vkDestroyCommandPool(m_device, m_graphics_queue_command_pool, nullptr);
+      m_graphics_queue_command_pool = VK_NULL_HANDLE;
     }
 
     if (m_pipeline != VK_NULL_HANDLE)
@@ -669,16 +669,16 @@ bool VKFirstTriangle::CreateRenderPass()
   
   VkSubpassDescription subpass_descriptions[1] = {
     {
-      0,                                          // flags
-      VK_PIPELINE_BIND_POINT_GRAPHICS,            // pipelineBindPoint, graphics or compute
-      0,                                          // inputAttachmentCount
-      nullptr,                                    // pInputAttachments
-      1,                                          // colorAttachmentCount
-      color_attachment_references,                // pColorAttachments
-      nullptr,                                    // pResolveAttachments
-      nullptr,                                    // pDepthStencilAttachment
-      0,                                          // preserveAttachmentCount
-      nullptr                                     // pPreserveAttachments
+      0,                               // flags
+      VK_PIPELINE_BIND_POINT_GRAPHICS, // pipelineBindPoint, graphics or compute
+      0,                               // inputAttachmentCount
+      nullptr,                         // pInputAttachments
+      1,                               // colorAttachmentCount
+      color_attachment_references,     // pColorAttachments
+      nullptr,                         // pResolveAttachments
+      nullptr,                         // pDepthStencilAttachment
+      0,                               // preserveAttachmentCount
+      nullptr                          // pPreserveAttachments
     }
   };
   
@@ -711,15 +711,15 @@ bool VKFirstTriangle::CreateFrameBuffers()
   for(size_t i = 0; i < m_frame_buffers.size(); ++i)
   {
     VkFramebufferCreateInfo framebuffer_create_info = {
-        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,  // VkStructureType
-        nullptr,                                    // pNext
-        0,                                          // VkFramebufferCreateFlags
-        m_render_pass,                              // VkRenderPass
-        1,                                          // attachmentCount, matched with render pass attachmentCount! (maybe subpass)
-        &swap_chain_images[i].view,                 // pAttachments
-        300,                                        // width
-        300,                                        // height
-        1                                           // layers
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType
+        nullptr,                                   // pNext
+        0,                                         // VkFramebufferCreateFlags
+        m_render_pass,                             // VkRenderPass
+        1,                                         // attachmentCount, matched with render pass attachmentCount! (maybe subpass)
+        &swap_chain_images[i].view,                // pAttachments
+        winAPI.Width(),                            // width
+        winAPI.Height(),                           // height
+        1                                          // layers
     };
 
     if (vkCreateFramebuffer(m_device, &framebuffer_create_info, nullptr, &m_frame_buffers[i]) != VK_SUCCESS)
@@ -782,22 +782,22 @@ bool VKFirstTriangle::CreatePipeline()
   };
 
   VkViewport viewport = {
-  0.0f,   // x
-  0.0f,   // y
-  300.0f, // width
-  300.0f, // height
-  0.0f,   // minDepth, depth range is [0, 1)
-  1.0f    // maxDepth
+  0.0f,            // x
+  0.0f,            // y
+  winAPI.Width(),  // width
+  winAPI.Height(), // height
+  0.0f,            // minDepth, depth range is [0, 1)
+  1.0f             // maxDepth
   };
 
   VkRect2D scissor = {
-    {      // VkOffset2D
-      0,     // x
-      0      // y
-    },     
-    {      // VkExtent2D
-      300,   // width
-      300    // height
+    {                 // VkOffset2D
+      0,                // x
+      0                 // y
+    },                
+    {                 // VkExtent2D
+      winAPI.Width(),   // width
+      winAPI.Height()   // height
     }
   };
 
@@ -1025,7 +1025,7 @@ bool VKFirstTriangle::RecordCommandBuffers()
     // move image between queues, if queue is different
     if (m_present_queue != m_graphics_queue)
     {
-      VkImageMemoryBarrier barrier_from_present_to_draw = {
+      VkImageMemoryBarrier barrier_from_present_to_graphics = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType
         nullptr,                                // pNext
         VK_ACCESS_MEMORY_READ_BIT,              // srcAccessMask
@@ -1037,7 +1037,7 @@ bool VKFirstTriangle::RecordCommandBuffers()
         m_swap_chain_images[i].handle,          // image
         image_subresource_range                 // VkImageSubresourceRange
       };
-      vkCmdPipelineBarrier(m_graphics_queue_command_buffers[i], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_present_to_draw);
+      vkCmdPipelineBarrier(m_graphics_queue_command_buffers[i], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_present_to_graphics);
     }
 
     VkRenderPassBeginInfo render_pass_begin_info = {
@@ -1051,8 +1051,8 @@ bool VKFirstTriangle::RecordCommandBuffers()
           0                                       // y
         },
         {                                       // VkExtent2D
-          300,                                    // width
-          300,                                    // height
+          winAPI.Width(),                         // width
+          winAPI.Height()                         // height
         }
       },
       1,                                        // clearValueCount
@@ -1069,19 +1069,19 @@ bool VKFirstTriangle::RecordCommandBuffers()
 
     if (m_present_queue != m_graphics_queue)
     {
-      VkImageMemoryBarrier barrier_from_draw_to_present = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,       // VkStructureType
-        nullptr,                                      // pNext
-        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,         // srcAccessMask
-        VK_ACCESS_MEMORY_READ_BIT,                    // dstAccessMask
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,              // oldLayout
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,              // newLayout
-        m_graphics_queue_family_index,                // srcQueueFamilyIndex
-        m_present_queue_family_index,                 // dstQueueFamilyIndex
-        m_swap_chain_images[i].handle,                // VkImage
-        image_subresource_range                       // VkImageSubresourceRange
+      VkImageMemoryBarrier barrier_from_graphics_to_present = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType
+        nullptr,                                // pNext
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // srcAccessMask
+        VK_ACCESS_MEMORY_READ_BIT,              // dstAccessMask
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // oldLayout
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // newLayout
+        m_graphics_queue_family_index,          // srcQueueFamilyIndex
+        m_present_queue_family_index,           // dstQueueFamilyIndex
+        m_swap_chain_images[i].handle,          // VkImage
+        image_subresource_range                 // VkImageSubresourceRange
       };
-      vkCmdPipelineBarrier(m_graphics_queue_command_buffers[i], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_draw_to_present);
+      vkCmdPipelineBarrier(m_graphics_queue_command_buffers[i], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier_from_graphics_to_present);
     }
 
     if (vkEndCommandBuffer(m_graphics_queue_command_buffers[i]) != VK_SUCCESS)
@@ -1117,8 +1117,6 @@ bool VKFirstTriangle::Initialize()
 
 void VKFirstTriangle::Update()
 {
-  return; // TODO: fix update
-
   uint32_t image_index;
 
   // acquiring next image to draw
@@ -1143,39 +1141,37 @@ void VKFirstTriangle::Update()
     assert("Problem occurred during swap chain image acquisition!", "Vulkan", Assert::Error);
     engine.Quit();
     return;
-    break;
   }
 
-  VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
-  VkSubmitInfo submit_info = { //peek VkSubmitInfo for detail
-    VK_STRUCTURE_TYPE_SUBMIT_INFO,
-    nullptr,
-    1, // waitSemaphoreCount
-    &m_image_available_semaphore, //wait
-    &wait_dst_stage_mask,
-    1, // commandBufferCount
-    &m_present_queue_command_buffers[image_index],
-    1, // signalSemaphoreCount
-    &m_rendering_finished_semaphore //signal
+  VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+  VkSubmitInfo submit_info = {
+    VK_STRUCTURE_TYPE_SUBMIT_INFO,                 // VkStructureType
+    nullptr,                                       // pNext
+    1,                                             // waitSemaphoreCount
+    &m_image_available_semaphore,                  // pWaitSemaphores
+    &wait_dst_stage_mask,                          // pWaitDstStageMask
+    1,                                             // commandBufferCount
+    &m_graphics_queue_command_buffers[image_index],// pCommandBuffers
+    1,                                             // signalSemaphoreCount
+    &m_rendering_finished_semaphore                // pSignalSemaphores
   };
 
   if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
   {
-    assert("Problem occurred during swap chain image submission!", "Vulkan", Assert::Error);
+    assert("Problem occurred during graphics queue submit!", "Vulkan", Assert::Error);
     engine.Quit();
     return;
   }
 
-  //presenting image
-  VkPresentInfoKHR present_info = { //peek VkPresentInfoKHR for detail
-    VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-    nullptr,
-    1, // waitSemaphoreCount
-    &m_rendering_finished_semaphore,
-    1, // swapchainCount
-    &m_swap_chain,
-    &image_index,
-    nullptr
+  VkPresentInfoKHR present_info = {
+    VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, // sType
+    nullptr,                            // pNext
+    1,                                  // waitSemaphoreCount
+    &m_rendering_finished_semaphore,    // pWaitSemaphores
+    1,                                  // swapchainCount
+    &m_swap_chain,                      // pSwapchains
+    &image_index,                       // pImageIndices
+    nullptr                             // pResults
   };
   result = vkQueuePresentKHR(m_present_queue, &present_info);
 
@@ -1189,10 +1185,12 @@ void VKFirstTriangle::Update()
       engine.Quit();
     return;
   default:
-    assert("Problem occurred during image presentation!", "Vulkan", Assert::Error);
+    assert("Problem occurred during present!", "Vulkan", Assert::Error);
     engine.Quit();
     return;
   }
+
+  return;
 }
 
 void VKFirstTriangle::Terminate()
