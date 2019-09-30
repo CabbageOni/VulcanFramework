@@ -269,7 +269,7 @@ bool VKBase::BaseInitialize()
 
 bool VKBase::Initialize() { return true; }
 
-void VKBase::Update() {}
+bool VKBase::Update() { return true; }
 
 void VKBase::Terminate() {}
 

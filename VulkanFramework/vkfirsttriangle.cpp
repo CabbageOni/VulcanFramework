@@ -651,8 +651,8 @@ bool VKFirstTriangle::CreateFrameBuffers()
 
 bool VKFirstTriangle::CreatePipeline()
 {
-  VkShaderModule vertex_shader_module = CreateShaderModule("shaders/vert.spv");
-  VkShaderModule fragment_shader_module = CreateShaderModule("shaders/frag.spv");
+  VkShaderModule vertex_shader_module = CreateShaderModule("shaders/t3/t3_vert.spv");
+  VkShaderModule fragment_shader_module = CreateShaderModule("shaders/t3/t3_frag.spv");
 
   if (!vertex_shader_module || !fragment_shader_module)
     return false;
@@ -1023,7 +1023,7 @@ bool VKFirstTriangle::Initialize()
   return true;
 }
 
-void VKFirstTriangle::Update()
+bool VKFirstTriangle::Update()
 {
   uint32_t image_index;
 
@@ -1042,13 +1042,10 @@ void VKFirstTriangle::Update()
   case VK_SUBOPTIMAL_KHR:
     break;
   case VK_ERROR_OUT_OF_DATE_KHR:
-    if (!OnWindowSizeChanged())
-      engine.Quit();
-    return;
+    return OnWindowSizeChanged();
   default:
     assert("Problem occurred during swap chain image acquisition!", "Vulkan", Assert::Error);
-    engine.Quit();
-    return;
+    return false;
   }
 
   VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -1067,8 +1064,7 @@ void VKFirstTriangle::Update()
   if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
   {
     assert("Problem occurred during graphics queue submit!", "Vulkan", Assert::Error);
-    engine.Quit();
-    return;
+    return false;
   }
 
   VkPresentInfoKHR present_info = {
@@ -1089,16 +1085,13 @@ void VKFirstTriangle::Update()
     break;
   case VK_ERROR_OUT_OF_DATE_KHR:
   case VK_SUBOPTIMAL_KHR:
-    if (!OnWindowSizeChanged())
-      engine.Quit();
-    return;
+    return OnWindowSizeChanged();
   default:
     assert("Problem occurred during present!", "Vulkan", Assert::Error);
-    engine.Quit();
-    return;
+    return false;
   }
 
-  return;
+  return true;
 }
 
 void VKFirstTriangle::Terminate()

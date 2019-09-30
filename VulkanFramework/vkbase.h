@@ -16,7 +16,7 @@ private:
   bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device, uint32_t &queue_family_index);
   virtual bool LoadDeviceLevelEntryPoints() final;
   virtual bool Initialize();
-  virtual void Update();
+  virtual bool Update();
   virtual void Terminate();
   virtual void BaseTerminate() final;
 
@@ -43,6 +43,6 @@ protected:
 public:
 
   friend bool Initialize();
-  friend void Update();
+  friend bool Update();
   friend void Terminate();
 };

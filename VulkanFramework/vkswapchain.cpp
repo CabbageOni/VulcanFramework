@@ -604,7 +604,7 @@ CHECK(CreateCommandBuffers)
 return true;
 }
 
-void VKSwapChain::Update()
+bool VKSwapChain::Update()
 {
   uint32_t image_index;
   
@@ -623,14 +623,10 @@ void VKSwapChain::Update()
   case VK_SUBOPTIMAL_KHR:
     break;
   case VK_ERROR_OUT_OF_DATE_KHR:
-    if (!OnWindowSizeChanged())
-      engine.Quit();
-    return;
+    return OnWindowSizeChanged();
   default:
     assert("Problem occurred during swap chain image acquisition!", "Vulkan", Assert::Error);
-    engine.Quit();
-    return;
-    break;
+    return false;
   }
 
   VkPipelineStageFlags wait_dst_stage_mask = VK_PIPELINE_STAGE_TRANSFER_BIT;
@@ -649,8 +645,7 @@ void VKSwapChain::Update()
   if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
   {
     assert("Problem occurred during swap chain image submission!", "Vulkan", Assert::Error);
-    engine.Quit();
-    return;
+    return false;
   }
 
   //presenting image
@@ -672,14 +667,13 @@ void VKSwapChain::Update()
     break;
   case VK_SUBOPTIMAL_KHR:
   case VK_ERROR_OUT_OF_DATE_KHR:
-    if (!OnWindowSizeChanged())
-      engine.Quit();
-    return;
+    return OnWindowSizeChanged();
   default:
     assert("Problem occurred during image presentation!", "Vulkan", Assert::Error);
-    engine.Quit();
-    return;
+    return false;
   }
+
+  return true;
 }
 
 void VKSwapChain::Terminate()

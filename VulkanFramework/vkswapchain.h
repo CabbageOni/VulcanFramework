@@ -40,12 +40,12 @@ private:
   VkPresentModeKHR GetSwapChainPresentMode(std::vector<VkPresentModeKHR>& present_modes);
 
   virtual bool Initialize() override;
-  virtual void Update() override;
+  virtual bool Update() override;
   virtual void Terminate() override;
 
 public:
 
   friend bool Initialize();
-  friend void Update();
+  friend bool Update();
   friend void Terminate();
 };

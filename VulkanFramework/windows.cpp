@@ -106,10 +106,12 @@ void Begin()
   timer.Begin();
 }
 
-void Update()
+bool Update()
 {
-  vulkan.Update();
+  if (!vulkan.Update()) return false;
   timer.Update();
+
+  return true;
 }
 
 void End()
@@ -143,7 +145,7 @@ int CALLBACK WinMain(HINSTANCE h_instance, HINSTANCE, LPSTR, int)
         TranslateMessage(&msg);
         DispatchMessage(&msg);
       }
-      Update();
+      if (!Update()) engine.Quit();
     }
     End();
   }

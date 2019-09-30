@@ -30,7 +30,7 @@ public:
   friend LRESULT CALLBACK MainWindowCallback(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
   friend HWND InitializeWindow(WNDCLASS& wndClass, const HINSTANCE& hInst);
   friend int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int);
-  friend void Update();
+  friend bool Update();
   friend Assert;
 } winAPI;
 
