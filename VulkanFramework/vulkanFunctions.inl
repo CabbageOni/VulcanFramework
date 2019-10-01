@@ -134,6 +134,7 @@ LOAD_DEVICE_LEVEL(vkCmdDraw)
 LOAD_DEVICE_LEVEL(vkCmdEndRenderPass)
 LOAD_DEVICE_LEVEL(vkCmdSetViewport)
 LOAD_DEVICE_LEVEL(vkCmdSetScissor)
+LOAD_DEVICE_LEVEL(vkCmdCopyBuffer)
 #endif
 
 #undef LOAD_DEVICE_LEVEL

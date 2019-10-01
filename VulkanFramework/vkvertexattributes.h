@@ -12,10 +12,43 @@ private:
     float x, y, z, w;
     float r, g, b, a;
   };
-  uint64_t       m_vertex_size;
-  uint32_t       m_vertex_count;
-  VkBuffer       m_vertex_buffer;
-  VkDeviceMemory m_vertex_memory;
+  constexpr static VertexData m_vertex_data[] = {
+    {
+      -0.7f, -0.7f, 0.0f, 1.0f,
+      1.0f, 0.0f, 0.0f, 0.0f
+    },
+    {
+      -0.7f, 0.7f, 0.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 0.0f
+    },
+    {
+      0.7f, -0.7f, 0.0f, 1.0f,
+      0.0f, 0.0f, 1.0f, 0.0f
+    },
+    {
+      0.7f, -0.7f, 0.0f, 1.0f,
+      0.0f, 0.0f, 1.0f, 0.0f
+    },
+    {
+      -0.7f, 0.7f, 0.0f, 1.0f,
+      0.0f, 1.0f, 0.0f, 0.0f
+    },
+    {
+      0.7f, 0.7f, 0.0f, 1.0f,
+      0.3f, 0.3f, 0.3f, 0.0f
+    }
+  };
+
+  struct BufferInfo
+  {
+    VkDeviceMemory memory;
+    uint32_t       count;
+    uint64_t       size;
+  };
+  VkBuffer   m_vertex_buffer;
+  BufferInfo m_vertex_buffer_info;
+  VkBuffer   m_staging_buffer;
+  BufferInfo m_staging_buffer_info;
 
   uint32_t      m_graphics_queue_family_index;
   uint32_t      m_present_queue_family_index;
@@ -45,11 +78,6 @@ private:
   VkRenderPass   m_render_pass;
   VkPipeline     m_pipeline;
 
-  struct ImageInfo
-  {
-    VkImage image;
-  };
-
   virtual bool Initialize() override;
   virtual bool CreateDevice() override;
   bool CheckPhysicalDeviceProperties(VkPhysicalDevice physical_device,
@@ -57,8 +85,11 @@ private:
     uint32_t &selected_present_queue_family_index);
   bool GetDeviceQueue();
   bool CreateVertexBuffer();
-  bool AllocateBufferMemory(VkBuffer buffer, VkDeviceMemory* memory);
+  bool CreateBuffer(VkBufferUsageFlags usage, VkMemoryPropertyFlagBits memoryProperty, VkBuffer& buffer, BufferInfo& buffer_info);
+  bool AllocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlagBits property, VkDeviceMemory* memory);
+  bool CreateStagingBuffer();
   bool CreateCommandBuffers();
+  bool CopyVertexData();
   bool CreateCommandPool(uint32_t queue_family_index, VkCommandPool* pool);
   bool AllocateCommandBuffers(VkCommandPool pool, uint32_t count, VkCommandBuffer* command_buffers);
   bool CreateSemaphores();

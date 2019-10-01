@@ -14,7 +14,9 @@ bool VKVertexAttributes::Initialize()
 
   CHECK(GetDeviceQueue)
   CHECK(CreateVertexBuffer)
+  CHECK(CreateStagingBuffer)
   CHECK(CreateCommandBuffers)
+  CHECK(CopyVertexData)
   CHECK(CreateSemaphores)
   CHECK(CreateFences)
   CHECK(OnWindowSizeChanged)
@@ -222,87 +224,51 @@ bool VKVertexAttributes::GetDeviceQueue()
 
 bool VKVertexAttributes::CreateVertexBuffer()
 {
-  constexpr VertexData vertex_data[] = {
-    {
-      -0.7f, -0.7f, 0.0f, 1.0f,
-      1.0f, 0.0f, 0.0f, 0.0f
-    },
-    {
-      -0.7f, 0.7f, 0.0f, 1.0f,
-      0.0f, 1.0f, 0.0f, 0.0f
-    },
-    {
-      0.7f, -0.7f, 0.0f, 1.0f,
-      0.0f, 0.0f, 1.0f, 0.0f
-    },
-    {
-      0.7f, -0.7f, 0.0f, 1.0f,
-      0.0f, 0.0f, 1.0f, 0.0f
-    },
-    {
-      -0.7f, 0.7f, 0.0f, 1.0f,
-      0.0f, 1.0f, 0.0f, 0.0f
-    },
-    {
-      0.7f, 0.7f, 0.0f, 1.0f,
-      0.3f, 0.3f, 0.3f, 0.0f
-    }
-  };
-  m_vertex_size = sizeof(vertex_data);
-  m_vertex_count = static_cast<uint32_t>(m_vertex_size / sizeof(VertexData));
+  m_vertex_buffer_info.size = sizeof(m_vertex_data);
+  m_vertex_buffer_info.count = static_cast<uint32_t>(m_vertex_buffer_info.size / sizeof(VertexData));
 
+  if (!CreateBuffer(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertex_buffer, m_vertex_buffer_info))
+    return false;
+  
+  return true;
+}
+
+bool VKVertexAttributes::CreateBuffer(VkBufferUsageFlags usage, VkMemoryPropertyFlagBits memoryProperty, VkBuffer& buffer, BufferInfo& buffer_info)
+{
   VkBufferCreateInfo buffer_create_info = {
-    VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType
-    nullptr,                              // *pNext
-    0,                                    // VkBufferCreateFlags
-    m_vertex_size,                        // size
-    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // usage
-    VK_SHARING_MODE_EXCLUSIVE,            // sharingMode
-    0,                                    // queueFamilyIndexCount
-    nullptr                               // pQueueFamilyIndices
+      VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType
+      nullptr,                              // pNext
+      0,                                    // VkBufferCreateFlags
+      buffer_info.size,                     // VkDeviceSize
+      usage,                                // VkBufferUsageFlags
+      VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode
+      0,                                    // queueFamilyIndexCount
+      nullptr                               // pQueueFamilyIndices
   };
 
-  if (vkCreateBuffer(m_device, &buffer_create_info, nullptr, &m_vertex_buffer) != VK_SUCCESS)
+  if (vkCreateBuffer(m_device, &buffer_create_info, nullptr, &buffer) != VK_SUCCESS)
   {
-    assert("Could not create a vertex buffer!", "Vulkan", Assert::Error);
+    assert("Could not create buffer!", "Vulkan", Assert::Error);
     return false;
   }
 
-  if (!AllocateBufferMemory(m_vertex_buffer, &m_vertex_memory))
+  if (!AllocateBufferMemory(buffer, memoryProperty, &buffer_info.memory))
   {
-    assert("Could not allocate memory for a vertex buffer!", "Vulkan", Assert::Error);
+    assert("Could not allocate memory for a buffer!", "Vulkan", Assert::Error);
     return false;
   }
 
-  if (vkBindBufferMemory(m_device, m_vertex_buffer, m_vertex_memory, 0) != VK_SUCCESS)
+  if (vkBindBufferMemory(m_device, buffer, buffer_info.memory, 0) != VK_SUCCESS)
   {
-    assert("Could not bind memory for a vertex buffer!", "Vulkan", Assert::Error);
+    assert("Could not bind memory to a buffer!", "Vulkan", Assert::Error);
     return false;
   }
-
-  void* vertex_buffer_memory_pointer;
-  if (vkMapMemory(m_device, m_vertex_memory, 0, m_vertex_size, 0, &vertex_buffer_memory_pointer) != VK_SUCCESS)
-  {
-    assert("Could not map memory and upload data to a vertex buffer!", "Vulkan", Assert::Error);
-    return false;
-  }
-
-  memcpy(vertex_buffer_memory_pointer, vertex_data, m_vertex_size);
-
-  VkMappedMemoryRange flush_range = {
-    VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // VkStructureType
-    nullptr,                               // pNext
-    m_vertex_memory,                       // VkDeviceMemory
-    0,                                     // offset
-    VK_WHOLE_SIZE                          // size
-  };
-  vkFlushMappedMemoryRanges(m_device, 1, &flush_range); // manual reload cache, informing driver what part of the memory changed
-  vkUnmapMemory(m_device, m_vertex_memory);
 
   return true;
 }
 
-bool VKVertexAttributes::AllocateBufferMemory(VkBuffer buffer, VkDeviceMemory* memory)
+bool VKVertexAttributes::AllocateBufferMemory(VkBuffer buffer, VkMemoryPropertyFlagBits property, VkDeviceMemory* memory)
 {
   VkMemoryRequirements buffer_memory_requirements;
   vkGetBufferMemoryRequirements(m_device, buffer, &buffer_memory_requirements);
@@ -312,7 +278,7 @@ bool VKVertexAttributes::AllocateBufferMemory(VkBuffer buffer, VkDeviceMemory* m
 
   for (uint32_t i = 0; i < memory_properties.memoryTypeCount; ++i)
   {
-    if ((buffer_memory_requirements.memoryTypeBits & (1 << i)) && (memory_properties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+    if ((buffer_memory_requirements.memoryTypeBits & (1 << i)) && (memory_properties.memoryTypes[i].propertyFlags & property))
     {
       VkMemoryAllocateInfo memory_allocate_info = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType
@@ -326,6 +292,15 @@ bool VKVertexAttributes::AllocateBufferMemory(VkBuffer buffer, VkDeviceMemory* m
     }
   }
   return false;
+}
+
+bool VKVertexAttributes::CreateStagingBuffer()
+{
+  m_staging_buffer_info.size = 4000;
+  if (!CreateBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, m_staging_buffer, m_staging_buffer_info))
+    return false;
+
+  return true;
 }
 
 bool VKVertexAttributes::CreateCommandBuffers()
@@ -378,11 +353,91 @@ bool VKVertexAttributes::AllocateCommandBuffers(VkCommandPool pool, uint32_t cou
   return true;
 }
 
+bool VKVertexAttributes::CopyVertexData()
+{
+  void* staging_buffer_memory_pointer;
+  if (vkMapMemory(m_device, m_staging_buffer_info.memory, 0, m_vertex_buffer_info.size, 0, &staging_buffer_memory_pointer) != VK_SUCCESS)
+  {
+    assert("Could not map memory!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  memcpy(staging_buffer_memory_pointer, m_vertex_data, m_vertex_buffer_info.size);
+
+  VkMappedMemoryRange flush_range = {
+    VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // VkStructureType
+    nullptr,                               // pNext
+    m_staging_buffer_info.memory,          // memory
+    0,                                     // offset
+    m_vertex_buffer_info.size              // size
+  };
+  vkFlushMappedMemoryRanges(m_device, 1, &flush_range);
+
+  vkUnmapMemory(m_device, m_staging_buffer_info.memory);
+
+  // Prepare command buffer to copy data from staging buffer to a vertex buffer
+  VkCommandBufferBeginInfo command_buffer_begin_info = {
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType
+    nullptr,                                     // pNext
+    VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags
+    nullptr                                      // pInheritanceInfo
+  };
+
+  VkCommandBuffer command_buffer = m_virtual_frames[0].command_buffer;
+
+  vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
+
+  VkBufferCopy buffer_copy_info = {
+    0,                        // srcOffset
+    0,                        // dstOffset
+    m_vertex_buffer_info.size // size
+  };
+  vkCmdCopyBuffer(command_buffer, m_staging_buffer, m_vertex_buffer, 1, &buffer_copy_info);
+
+  VkBufferMemoryBarrier buffer_memory_barrier = {
+    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType
+    nullptr,                                 // pNext
+    VK_ACCESS_MEMORY_WRITE_BIT,              // srcAccessMask
+    VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,     // dstAccessMask
+    VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
+    VK_QUEUE_FAMILY_IGNORED,                 // dstQueueFamilyIndex
+    m_vertex_buffer,                         // buffer
+    0,                                       // offset
+    VK_WHOLE_SIZE                            // size
+  };
+  vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0, nullptr, 1, &buffer_memory_barrier, 0, nullptr);
+
+  vkEndCommandBuffer(command_buffer);
+
+  // Submit command buffer and copy data from staging buffer to a vertex buffer
+  VkSubmitInfo submit_info = {
+    VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType
+    nullptr,                       // pNext
+    0,                             // waitSemaphoreCount
+    nullptr,                       // pWaitSemaphores
+    nullptr,                       // pWaitDstStageMask;
+    1,                             // commandBufferCount
+    &command_buffer,               // pCommandBuffers
+    0,                             // signalSemaphoreCount
+    nullptr                        // pSignalSemaphores
+  };
+
+  if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
+  {
+    assert("Failed to submit buffer staging command buffer!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  vkDeviceWaitIdle(m_device); // using a fence is a better option
+
+  return true;
+}
+
 bool VKVertexAttributes::CreateSemaphores()
 {
   VkSemaphoreCreateInfo semaphore_create_info = {
     VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, // VkStructureType
-    nullptr,                                 // Next
+    nullptr,                                 // pNext
     0                                        // VkSemaphoreCreateFlags
   };
 
@@ -1208,7 +1263,7 @@ bool VKVertexAttributes::PrepareFrame(VkCommandBuffer command_buffer, const size
   VkDeviceSize offset = 0;
   vkCmdBindVertexBuffers(command_buffer, 0, 1, &m_vertex_buffer, &offset);
   
-  vkCmdDraw(command_buffer, m_vertex_count, 1, 0, 0);
+  vkCmdDraw(command_buffer, m_vertex_buffer_info.count, 1, 0, 0);
 
   vkCmdEndRenderPass(command_buffer);
 
@@ -1282,16 +1337,28 @@ void VKVertexAttributes::Terminate()
       m_swap_chain = VK_NULL_HANDLE;
     }
 
-    if (m_vertex_memory != VK_NULL_HANDLE)
+    if (m_vertex_buffer_info.memory != VK_NULL_HANDLE)
     {
-      vkFreeMemory(m_device, m_vertex_memory, nullptr);
-      m_vertex_memory = VK_NULL_HANDLE;
+      vkFreeMemory(m_device, m_vertex_buffer_info.memory, nullptr);
+      m_vertex_buffer_info.memory = VK_NULL_HANDLE;
     }
 
     if (m_vertex_buffer != VK_NULL_HANDLE)
     {
       vkDestroyBuffer(m_device, m_vertex_buffer, nullptr);
       m_vertex_buffer = VK_NULL_HANDLE;
+    }
+
+    if (m_staging_buffer_info.memory != VK_NULL_HANDLE)
+    {
+      vkFreeMemory(m_device, m_staging_buffer_info.memory, nullptr);
+      m_staging_buffer_info.memory = VK_NULL_HANDLE;
+    }
+
+    if (m_staging_buffer != VK_NULL_HANDLE)
+    {
+      vkDestroyBuffer(m_device, m_staging_buffer, nullptr);
+      m_staging_buffer = VK_NULL_HANDLE;
     }
 
     if (m_graphics_command_pool != VK_NULL_HANDLE)
