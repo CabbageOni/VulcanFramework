@@ -823,7 +823,7 @@ bool VKVertexAttributes::CreatePipeline()
   if (!vertex_shader_module || !fragment_shader_module)
     return false;
 
-  std::vector<VkPipelineShaderStageCreateInfo> shader_stage_create_infos = {
+  VkPipelineShaderStageCreateInfo shader_stage_create_infos[2] = {
     // Vertex shader
     {
       VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType
@@ -846,7 +846,7 @@ bool VKVertexAttributes::CreatePipeline()
     }
   };
 
-  std::vector<VkVertexInputBindingDescription> vertex_binding_descriptions = {
+  VkVertexInputBindingDescription vertex_binding_descriptions[1] = {
     {
       0,                          // binding
       sizeof(VertexData),         // stride
@@ -854,7 +854,7 @@ bool VKVertexAttributes::CreatePipeline()
     }
   };
 
-  std::vector<VkVertexInputAttributeDescription> vertex_attribute_descriptions = {
+  VkVertexInputAttributeDescription vertex_attribute_descriptions[2] = {
     {
       0,                                      // location
       vertex_binding_descriptions[0].binding, // binding
@@ -870,13 +870,13 @@ bool VKVertexAttributes::CreatePipeline()
   };
 
   VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {
-      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,   // VkStructureType
-      nullptr,                                                     // *pNext
-      0,                                                           // VkPipelineVertexInputStateCreateFlags
-      static_cast<uint32_t>(vertex_binding_descriptions.size()),   // vertexBindingDescriptionCount
-      &vertex_binding_descriptions[0],                             // const VkVertexInputBindingDescription*
-      static_cast<uint32_t>(vertex_attribute_descriptions.size()), // vertexAttributeDescriptionCount
-      &vertex_attribute_descriptions[0]                            // const VkVertexInputAttributeDescription*
+      VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType
+      nullptr,                                                   // pNext
+      0,                                                         // VkPipelineVertexInputStateCreateFlags
+      1,                                                         // vertexBindingDescriptionCount
+      vertex_binding_descriptions,                               // const VkVertexInputBindingDescription*
+      2,                                                         // vertexAttributeDescriptionCount
+      vertex_attribute_descriptions                              // const VkVertexInputAttributeDescription*
   };
 
   VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {
@@ -970,8 +970,8 @@ bool VKVertexAttributes::CreatePipeline()
     VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,         // VkStructureType
     nullptr,                                                 // pNext
     0,                                                       // VkPipelineCreateFlags
-    static_cast<uint32_t>(shader_stage_create_infos.size()), // stageCount
-    shader_stage_create_infos.data(),                        // pStages
+    2,                                                       // stageCount
+    shader_stage_create_infos,                               // pStages
     &vertex_input_state_create_info,                         // pVertexInputState
     &input_assembly_state_create_info,                       // pInputAssemblyState
     nullptr,                                                 // pTessellationState
