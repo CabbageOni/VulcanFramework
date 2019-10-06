@@ -116,6 +116,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="assert.cpp" />
+    <ClCompile Include="fileio.cpp" />
     <ClCompile Include="system.cpp" />
     <ClCompile Include="time.cpp" />
     <ClCompile Include="myvulkan.cpp" />
@@ -128,12 +129,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="vktexturefinal.cpp" />
     <ClCompile Include="vkvertexattributes.cpp" />
     <ClCompile Include="windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="assert.h" />
     <ClInclude Include="fileio.h" />
+    <ClInclude Include="resources\stbi\stb_image.h" />
     <ClInclude Include="vkbase.h" />
     <ClInclude Include="resources\vulkan\vk_icd.h" />
     <ClInclude Include="resources\vulkan\vk_layer.h" />
@@ -164,6 +167,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
       </ExcludedFromBuild>
     </ClInclude>
+    <ClInclude Include="vktexturefinal.h" />
     <ClInclude Include="vkvertexattributes.h" />
   </ItemGroup>
   <ItemGroup>

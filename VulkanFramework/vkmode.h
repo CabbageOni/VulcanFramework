@@ -8,4 +8,6 @@
 #include "vkfirsttriangle.h"
 #elif VK_CURRENT_MODE == VK_VERTEX_ATTRIBUTES
 #include "vkvertexattributes.h"
+#elif VK_CURRENT_MODE == VK_TEXTURE_FINAL
+#include "vktexturefinal.h"
 #endif

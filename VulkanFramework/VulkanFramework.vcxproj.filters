@@ -39,6 +39,12 @@
     <Filter Include="소스 파일\Vulkan\VertexAttributes">
       <UniqueIdentifier>{e23e8d9b-6f21-4d3e-9a1e-d2ecbed46c1a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Vulkan\TextureFInal">
+      <UniqueIdentifier>{cf22f662-c565-4b35-bb80-7dffb5004205}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="리소스 파일\stbi">
+      <UniqueIdentifier>{128119b7-dc5c-4446-b888-eeda9a2bf84c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="windows.cpp">
@@ -67,6 +73,12 @@
     </ClCompile>
     <ClCompile Include="vkvertexattributes.cpp">
       <Filter>소스 파일\Vulkan\VertexAttributes</Filter>
+    </ClCompile>
+    <ClCompile Include="vktexturefinal.cpp">
+      <Filter>소스 파일\Vulkan\TextureFInal</Filter>
+    </ClCompile>
+    <ClCompile Include="fileio.cpp">
+      <Filter>소스 파일\System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +162,12 @@
     </ClInclude>
     <ClInclude Include="vkvertexattributes.h">
       <Filter>소스 파일\Vulkan\VertexAttributes</Filter>
+    </ClInclude>
+    <ClInclude Include="vktexturefinal.h">
+      <Filter>소스 파일\Vulkan\TextureFInal</Filter>
+    </ClInclude>
+    <ClInclude Include="resources\stbi\stb_image.h">
+      <Filter>리소스 파일\stbi</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
