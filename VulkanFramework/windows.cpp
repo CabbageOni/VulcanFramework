@@ -109,7 +109,7 @@ void Begin()
 bool Update()
 {
   if (!vulkan.Update()) return false;
-  timer.Update();
+  timer.Update(); // should be at last, always!
 
   return true;
 }

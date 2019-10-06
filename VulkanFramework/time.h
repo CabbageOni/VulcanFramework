@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-extern class Time
+extern class Timer
 {
 private:
   std::chrono::time_point<std::chrono::steady_clock> m_begin_time;
@@ -13,8 +13,8 @@ private:
   void Update();
 
 public:
-  float dt() const { return m_delta_time; }
-  
+  inline float dt() const { return m_delta_time; }
+    
   friend void Begin();
   friend bool Update();
 } timer;
