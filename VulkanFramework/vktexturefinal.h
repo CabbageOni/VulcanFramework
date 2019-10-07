@@ -66,6 +66,9 @@ private:
   VkImageView    m_texture_view;
   VkSampler      m_texture_sampler;
 
+  VkBuffer   m_uniform_buffer;
+  BufferInfo m_uniform_buffer_info;
+
   VkDescriptorSet       m_descriptor_set;
   VkDescriptorSetLayout m_descriptor_set_layout;
   VkDescriptorPool      m_descriptor_pool;
@@ -109,6 +112,8 @@ private:
   bool CreateImageView(VkImage image, VkImageView* image_view);
   bool CreateSampler(VkSampler* sampler);
   bool CopyTextureData(char* texture_data, uint32_t data_size, uint32_t width, uint32_t height);
+  bool CreateUniformBuffer();
+  bool CopyUniformBufferData();
   bool CreateDescriptorSetLayout();
   bool CreateDescriptorPool();
   bool AllocateDescriptorSet();

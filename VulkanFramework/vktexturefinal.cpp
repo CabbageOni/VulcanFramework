@@ -1,3 +1,5 @@
+#include <array>
+
 #define VK_USE_PLATFORM_WIN32_KHR
 #include "resources\vulkan\vulkan.h"
 #include "system.h"
@@ -19,6 +21,7 @@ bool VKTextureFinal::Initialize()
   CHECK(CreateSemaphores)
   CHECK(CreateFences)
   CHECK(CreateTexture)
+  CHECK(CreateUniformBuffer)
   CHECK(CreateDescriptorSetLayout)
   CHECK(CreateDescriptorPool)
   CHECK(AllocateDescriptorSet)
@@ -660,22 +663,148 @@ bool VKTextureFinal::CopyTextureData(char* texture_data, uint32_t data_size, uin
   return true;
 }
 
+bool VKTextureFinal::CreateUniformBuffer()
+{
+  m_uniform_buffer_info.size = 16 * sizeof(float);
+  if (!CreateBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_uniform_buffer, m_uniform_buffer_info))
+  {
+    assert("Could not create uniform buffer!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  if (!CopyUniformBufferData())
+    return false;
+
+  return true;
+}
+
+bool VKTextureFinal::CopyUniformBufferData()
+{
+  // Prepare data in staging buffer
+  const std::array<float, 16> uniform_data = {
+    m_swap_chain_info.extent.height / static_cast<float>(m_swap_chain_info.extent.width),
+    0,
+    0,
+    0,
+
+    0,
+    1,
+    0,
+    0,
+
+    0,
+    0,
+    1,
+    0,
+
+    0,
+    0,
+    0,
+    1
+  }; //aspect-ratio fixed
+   
+  void *staging_buffer_memory_pointer;
+  if (vkMapMemory(m_device, m_staging_buffer_info.memory, 0, m_staging_buffer_info.size, 0, &staging_buffer_memory_pointer) != VK_SUCCESS)
+  {
+    assert("Could not map memory and upload data to a staging buffer!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  memcpy(staging_buffer_memory_pointer, uniform_data.data(), m_uniform_buffer_info.size);
+
+  VkMappedMemoryRange flush_range = {
+    VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // VkStructureType
+    nullptr,                               // pNext
+    m_staging_buffer_info.memory,          // VkDeviceMemory
+    0,                                     // offset
+    m_uniform_buffer_info.size             // size
+  };
+  vkFlushMappedMemoryRanges(m_device, 1, &flush_range);
+
+  vkUnmapMemory(m_device, m_staging_buffer_info.memory); // consider not unmapping for future use
+
+  // Prepare command buffer to copy data from staging buffer to a uniform buffer
+  VkCommandBuffer command_buffer = m_virtual_frames[0].command_buffer;
+
+  VkCommandBufferBeginInfo command_buffer_begin_info = {
+    VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType
+    nullptr,                                     // pNext
+    VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags
+    nullptr                                      // pInheritanceInfo
+  };
+
+  vkBeginCommandBuffer(command_buffer, &command_buffer_begin_info);
+
+  VkBufferCopy buffer_copy_info = {
+    0,                         // srcOffset
+    0,                         // dstOffset
+    m_uniform_buffer_info.size // size
+  };
+  vkCmdCopyBuffer(command_buffer, m_staging_buffer, m_uniform_buffer, 1, &buffer_copy_info);
+
+  VkBufferMemoryBarrier buffer_memory_barrier = {
+    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType
+    nullptr,                                 // pNext
+    VK_ACCESS_TRANSFER_WRITE_BIT,            // srcAccessMask
+    VK_ACCESS_UNIFORM_READ_BIT,              // dstAccessMask
+    VK_QUEUE_FAMILY_IGNORED,                 // srcQueueFamilyIndex
+    VK_QUEUE_FAMILY_IGNORED,                 // dstQueueFamilyIndex
+    m_uniform_buffer,                        // buffer
+    0,                                       // offset
+    VK_WHOLE_SIZE                            // size
+  };
+  vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, 0, 0, nullptr, 1, &buffer_memory_barrier, 0, nullptr);
+
+  vkEndCommandBuffer(command_buffer);
+
+  // Submit command buffer and copy data from staging buffer to a vertex buffer
+  VkSubmitInfo submit_info = {
+    VK_STRUCTURE_TYPE_SUBMIT_INFO,                      // VkStructureType                        sType
+    nullptr,                                            // const void                            *pNext
+    0,                                                  // uint32_t                               waitSemaphoreCount
+    nullptr,                                            // const VkSemaphore                     *pWaitSemaphores
+    nullptr,                                            // const VkPipelineStageFlags            *pWaitDstStageMask;
+    1,                                                  // uint32_t                               commandBufferCount
+    &command_buffer,                                    // const VkCommandBuffer                 *pCommandBuffers
+    0,                                                  // uint32_t                               signalSemaphoreCount
+    nullptr                                             // const VkSemaphore                     *pSignalSemaphores
+  };
+
+  if (vkQueueSubmit(m_graphics_queue, 1, &submit_info, VK_NULL_HANDLE) != VK_SUCCESS)
+  {
+    assert("Graphics queue submit failed!", "Vulkan", Assert::Error);
+    return false;
+  }
+
+  vkDeviceWaitIdle(m_device); // consider using fences & semaphores
+  return true;
+}
+
 bool VKTextureFinal::CreateDescriptorSetLayout()
 {
-  VkDescriptorSetLayoutBinding layout_binding = {
-    0,                                         // binding
-    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // descriptorType
-    1,                                         // descriptorCount
-    VK_SHADER_STAGE_FRAGMENT_BIT,              // stageFlags
-    nullptr                                    // pImmutableSamplers
+  VkDescriptorSetLayoutBinding layout_bindings[2] = {
+    {
+      0,                                         // binding
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // descriptorType
+      1,                                         // descriptorCount
+      VK_SHADER_STAGE_FRAGMENT_BIT,              // stageFlags
+      nullptr                                    // pImmutableSamplers
+    },
+    {
+      1,                                
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      1,                                
+      VK_SHADER_STAGE_VERTEX_BIT,       
+      nullptr                           
+    }
   };
 
   VkDescriptorSetLayoutCreateInfo descriptor_set_layout_create_info = {
     VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType
     nullptr,                                             // pNext
     0,                                                   // VkDescriptorSetLayoutCreateFlags
-    1,                                                   // bindingCount
-    &layout_binding                                      // const VkDescriptorSetLayoutBinding*
+    2,                                                   // bindingCount
+    layout_bindings                                      // const VkDescriptorSetLayoutBinding*
   };
 
   if (vkCreateDescriptorSetLayout(m_device, &descriptor_set_layout_create_info, nullptr, &m_descriptor_set_layout) != VK_SUCCESS)
@@ -689,9 +818,15 @@ bool VKTextureFinal::CreateDescriptorSetLayout()
 
 bool VKTextureFinal::CreateDescriptorPool()
 {
-  VkDescriptorPoolSize pool_size = {
+  VkDescriptorPoolSize pool_sizes[2] = {
+    {
       VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // VkDescriptorType
       1                                          // descriptorCount
+    },
+    {
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+      1
+    }
   };
 
   VkDescriptorPoolCreateInfo descriptor_pool_create_info = {
@@ -699,8 +834,8 @@ bool VKTextureFinal::CreateDescriptorPool()
     nullptr,                                        // pNext
     0,                                              // VkDescriptorPoolCreateFlags
     1,                                              // maxSets
-    1,                                              // poolSizeCount
-    &pool_size                                      // pPoolSizes
+    2,                                              // poolSizeCount
+    pool_sizes                                      // pPoolSizes
   };
 
   if (vkCreateDescriptorPool(m_device, &descriptor_pool_create_info, nullptr, &m_descriptor_pool) != VK_SUCCESS)
@@ -739,20 +874,40 @@ bool VKTextureFinal::UpdateDescriptorSet()
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL // VkImageLayout
   };
 
-  VkWriteDescriptorSet descriptor_writes = {
-    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    // VkStructureType
-    nullptr,                                   // pNext
-    m_descriptor_set,                          // dstSet
-    0,                                         // dstBinding
-    0,                                         // dstArrayElement
-    1,                                         // descriptorCount
-    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // VkDescriptorType
-    &image_info,                               // const VkDescriptorImageInfo*
-    nullptr,                                   // const VkDescriptorBufferInfo*
-    nullptr                                    // pTexelBufferView
+  VkDescriptorBufferInfo buffer_info = {
+    m_uniform_buffer,          // VkBuffer
+    0,                         // offset
+    m_uniform_buffer_info.size // range
   };
 
-  vkUpdateDescriptorSets(m_device, 1, &descriptor_writes, 0, nullptr);
+  VkWriteDescriptorSet descriptor_writes[2] = {
+    {
+      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,    // VkStructureType
+      nullptr,                                   // pNext
+      m_descriptor_set,                          // dstSet
+      0,                                         // dstBinding
+      0,                                         // dstArrayElement
+      1,                                         // descriptorCount
+      VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, // VkDescriptorType
+      &image_info,                               // const VkDescriptorImageInfo*
+      nullptr,                                   // const VkDescriptorBufferInfo*
+      nullptr                                    // pTexelBufferView
+    },
+    {
+      VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+      nullptr,                               
+      m_descriptor_set,
+      1,                                     
+      0,                                     
+      1,                                     
+      VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,     
+      nullptr,                               
+      &buffer_info,                          
+      nullptr                                
+    }
+  };
+
+  vkUpdateDescriptorSets(m_device, 2, descriptor_writes, 0, nullptr);
   return true;
 }
 
@@ -849,6 +1004,13 @@ bool VKTextureFinal::OnWindowSizeChanged()
       return false;
 
     if (!CreatePipeline())
+      return false;
+  }
+
+  if ((m_device != VK_NULL_HANDLE) && (m_staging_buffer != VK_NULL_HANDLE))
+  {
+    vkDeviceWaitIdle(m_device);
+    if (!CopyUniformBufferData())
       return false;
   }
 
@@ -1753,6 +1915,12 @@ void VKTextureFinal::Terminate()
     {
       vkDestroySampler(m_device, m_texture_sampler, nullptr);
       m_texture_sampler = VK_NULL_HANDLE;
+    }
+
+    if (m_uniform_buffer != VK_NULL_HANDLE)
+    {
+      vkDestroyBuffer(m_device, m_uniform_buffer, nullptr);
+      m_uniform_buffer = VK_NULL_HANDLE;
     }
 
     if (m_descriptor_set_layout != VK_NULL_HANDLE)
